@@ -1,0 +1,34 @@
+{
+  "candidate_labels": [
+    "independent_praat_run_1",
+    "independent_praat_run_2"
+  ],
+  "canonical_sets": {
+    "kachlicka2019-reconstruction-v1": {
+      "aggregate_sha256": "ec00a36f74a48ac6e6edcfc77db9817e6cbe34d300c0f62617129d3d43d919c8",
+      "file_count": 404
+    },
+    "saito-tierney2024-reconstruction-v1": {
+      "aggregate_sha256": "a09c4360ebb6e68488c431a9366c3bca0ce6b1e23483927aeb55d6e0522031b1",
+      "file_count": 303
+    },
+    "sun2021-reconstruction-v1": {
+      "aggregate_sha256": "ec00a36f74a48ac6e6edcfc77db9817e6cbe34d300c0f62617129d3d43d919c8",
+      "file_count": 404
+    }
+  },
+  "comparison": "all_generated_flac_byte_identical_to_canonical",
+  "generated_flac_file_count_per_run": 1111,
+  "generator": {
+    "script": "tools/reconstruct_stimuli.praat",
+    "script_sha256": "cdd146dc820435fb7769a102d9042701d99115c0744d157f72cd788dee5d9cb4"
+  },
+  "independent_candidate_run_count": 2,
+  "result": "passed",
+  "schema_version": 1,
+  "verification_date": "2026-07-17",
+  "verification_tool": {
+    "script": "tools/verify_reconstruction_reproducibility.py",
+    "script_sha256": "f35ecd4c96e1bab1d8f1b38621f768b158148a5d76891a69224d3466dc4dd66a"
+  }
+}

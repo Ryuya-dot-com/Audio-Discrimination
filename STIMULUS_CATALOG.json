@@ -1,0 +1,75 @@
+{
+  "audit_date": "2026-07-17",
+  "bindings": {
+    "kachlicka2019": "kachlicka2019-reconstruction-v1",
+    "saitoTierney2024": "saito-tierney2024-reconstruction-v1",
+    "sun2021": "sun2021-reconstruction-v1"
+  },
+  "policy": {
+    "allow_independent_stimulus_selection": false,
+    "protocol_and_stimulus_set_are_bound": true,
+    "unvalidated_set_behavior": "fail_closed"
+  },
+  "schema_version": 1,
+  "sets": {
+    "kachlicka2019-reconstruction-v1": {
+      "aggregate_sha256": "ec00a36f74a48ac6e6edcfc77db9817e6cbe34d300c0f62617129d3d43d919c8",
+      "claim": "reported_parameter_reconstruction_not_original_study_files",
+      "kind": "transformed_official_distribution",
+      "manifest": "stimulus_sets/kachlicka2019-reconstruction-v1/STIMULUS_MANIFEST.json",
+      "manifest_sha256": "2397a7c6a737d723e1e7260377e49ba3dcbc316b4483093ff7ec9c6b213e9426",
+      "root": "stimulus_sets/kachlicka2019-reconstruction-v1",
+      "task_ids": [
+        "pitch",
+        "formant",
+        "duration",
+        "risetime"
+      ],
+      "validated": true
+    },
+    "saito-tierney-offline-osf-6p8hv-e8ebb0a5": {
+      "aggregate_sha256": "e8ebb0a5c1a52f5fd2a8be9c8755c33865611c601bdb20c3e7af90a5e589c118",
+      "claim": "official_osf_offline_files_byte_identical",
+      "kind": "official_distribution",
+      "manifest": "STIMULUS_MANIFEST.json",
+      "manifest_sha256": "dab7347af84af44da5d76583ffa0f88f8554ec47339e3607c2b8b68606e406a7",
+      "root": ".",
+      "task_ids": [
+        "pitch",
+        "formant",
+        "duration",
+        "risetime"
+      ],
+      "validated": true
+    },
+    "saito-tierney2024-reconstruction-v1": {
+      "aggregate_sha256": "a09c4360ebb6e68488c431a9366c3bca0ce6b1e23483927aeb55d6e0522031b1",
+      "claim": "reported_parameter_reconstruction_not_original_study_files",
+      "kind": "transformed_official_distribution",
+      "manifest": "stimulus_sets/saito-tierney2024-reconstruction-v1/STIMULUS_MANIFEST.json",
+      "manifest_sha256": "79a74c43a6ef9804b666d27f454553d558c1adb35ebc9aeb05ed12c8e0993c3e",
+      "root": "stimulus_sets/saito-tierney2024-reconstruction-v1",
+      "task_ids": [
+        "pitch",
+        "formant",
+        "duration"
+      ],
+      "validated": true
+    },
+    "sun2021-reconstruction-v1": {
+      "aggregate_sha256": "ec00a36f74a48ac6e6edcfc77db9817e6cbe34d300c0f62617129d3d43d919c8",
+      "claim": "reported_parameter_reconstruction_not_original_study_files",
+      "kind": "transformed_official_distribution",
+      "manifest": "stimulus_sets/sun2021-reconstruction-v1/STIMULUS_MANIFEST.json",
+      "manifest_sha256": "bf8662c1402de28889bc1cfc951aa0a42d998c6118a3344aa35e5e06055b009a",
+      "root": "stimulus_sets/sun2021-reconstruction-v1",
+      "task_ids": [
+        "pitch",
+        "formant",
+        "duration",
+        "risetime"
+      ],
+      "validated": true
+    }
+  }
+}

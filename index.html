@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title data-i18n="app.title">Audio Discrimination Battery</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --background: #f3f4f6;
+      --surface: #ffffff;
+      --surface-muted: #f7f7f8;
+      --text: #182230;
+      --muted: #5d6775;
+      --border: #d5d9e0;
+      --accent: #1d4ed8;
+      --accent-hover: #1e40af;
+      --success: #157347;
+      --error: #b42318;
+      --focus: #2563eb;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", sans-serif;
+      line-height: 1.6;
+      background: var(--background);
+      color: var(--text);
+    }
+
+    .app-toolbar {
+      position: sticky;
+      z-index: 10;
+      top: 0;
+      display: flex;
+      justify-content: flex-end;
+      padding: 12px max(20px, env(safe-area-inset-right));
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .language-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .language-label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .language-switch button {
+      min-width: 68px;
+      min-height: 36px;
+      padding: 6px 10px;
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .language-switch button[aria-pressed="true"] {
+      color: #ffffff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    main {
+      width: min(1040px, 100%);
+      margin: 24px auto 32px;
+      padding: 0 20px;
+    }
+
+    .card {
+      display: none;
+      padding: clamp(20px, 4vw, 32px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .card.active { display: block; }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0 0 12px;
+      color: var(--text);
+      line-height: 1.25;
+    }
+
+    h1 { font-size: clamp(1.7rem, 4vw, 2.15rem); }
+    h2 { font-size: clamp(1.45rem, 3vw, 1.8rem); }
+    h3 { font-size: 1.1rem; }
+
+    p {
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+
+    ul {
+      margin: 0 0 16px;
+      padding-left: 22px;
+      color: var(--muted);
+    }
+
+    li { margin-bottom: 7px; }
+
+    label,
+    legend {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+    }
+
+    fieldset {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    legend { margin-bottom: 12px; }
+
+    button,
+    input,
+    select { font: inherit; }
+
+    input[type="text"],
+    select {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      accent-color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 10px 16px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: #ffffff;
+      background: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: var(--surface);
+      border-color: var(--border);
+    }
+
+    button:hover:not(:disabled) { background: var(--accent-hover); }
+
+    button.secondary:hover:not(:disabled),
+    .language-switch button:hover:not(:disabled) {
+      background: var(--surface-muted);
+    }
+
+    .language-switch button[aria-pressed="true"]:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 4px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .tag,
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border: 1px solid #c7d7f2;
+      border-radius: 4px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-weight: 600;
+    }
+
+    .tag {
+      margin-bottom: 10px;
+      padding: 5px 12px;
+      font-size: 14px;
+    }
+
+    .pill {
+      gap: 6px;
+      padding: 4px 10px;
+      font-size: 13px;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .highlight {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 22px 0;
+    }
+
+    .setting-card {
+      min-width: 0;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .setting-card.full-width { grid-column: 1 / -1; }
+
+    .task-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .check-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 48px;
+      margin: 0;
+      padding: 10px 12px;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .check-option.is-disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .setting-description {
+      min-height: 3.3em;
+      margin: 12px 0 0;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .error-message {
+      min-height: 1.5em;
+      color: var(--error);
+      font-weight: 600;
+    }
+
+    .order-list {
+      margin: 12px 0 18px;
+      padding-left: 24px;
+      list-style: decimal-leading-zero;
+      color: var(--text);
+    }
+
+    .order-list li { margin: 6px 0; }
+
+    .response-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      margin-top: 20px;
+    }
+
+    .response-buttons button {
+      width: 112px;
+      height: 112px;
+      padding: 0;
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--accent);
+      font-size: 56px;
+    }
+
+    .response-buttons button:hover:not(:disabled) {
+      background: #eff6ff;
+    }
+
+    .feedback {
+      min-height: 26px;
+      margin-top: 14px;
+      font-weight: 700;
+    }
+
+    .feedback.correct { color: var(--success); }
+    .feedback.incorrect { color: var(--error); }
+
+    .summary-list {
+      display: grid;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .summary-item,
+    .feedback-summary {
+      padding: 14px;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .summary-item strong { color: var(--text); }
+
+    .results-section + .results-section { margin-top: 28px; }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      background: var(--surface);
+    }
+
+    caption {
+      padding: 12px 14px;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--text);
+      background: var(--surface-muted);
+      font-size: 14px;
+    }
+
+    tbody tr:last-child td { border-bottom: 0; }
+
+    .wide-preview {
+      min-height: 90px;
+      margin-top: 12px;
+      padding: 14px;
+      overflow-x: auto;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .wide-table { min-width: 1100px; }
+
+    .wide-preview p:last-child { margin-bottom: 0; }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 760px) {
+      .app-toolbar { padding-inline: 12px; }
+      main {
+        margin-top: 16px;
+        padding-inline: 12px;
+      }
+      .settings-grid,
+      .task-options { grid-template-columns: 1fr; }
+      .setting-card.full-width { grid-column: auto; }
+      .button-row { align-items: stretch; }
+      .button-row button { flex: 1 1 100%; }
+      .response-buttons { gap: 16px; }
+      .response-buttons button {
+        width: 96px;
+        height: 96px;
+        font-size: 48px;
+      }
+      .language-label { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-toolbar">
+    <div class="language-switch" role="group" aria-label="Language" data-i18n-aria-label="language.label">
+      <span class="language-label" data-i18n="language.label">Language</span>
+      <button id="langEn" type="button" aria-pressed="true" data-language="en" data-i18n="language.english">English</button>
+      <button id="langJa" type="button" aria-pressed="false" data-language="ja" data-i18n="language.japanese">Japanese</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <section id="researcherSetup" class="card active" tabindex="-1" aria-labelledby="researcherSetupTitle">
+      <div class="tag" data-i18n="researcherSetup.tag">Researcher setup</div>
+      <h1 id="researcherSetupTitle" data-i18n="researcherSetup.title">Configure the listening battery</h1>
+      <p data-i18n="researcherSetup.intro">Select the tasks, study profile, and feedback shown to participants. Each profile fixes both the adaptive procedure and its matching stimulus set.</p>
+
+      <div class="settings-grid">
+        <fieldset class="setting-card full-width">
+          <legend data-i18n="researcherSetup.tasks.legend">Tasks</legend>
+          <p class="status" data-i18n="researcherSetup.tasks.help">Task availability follows the selected study profile. Participants see only neutral Listening Task labels.</p>
+          <div class="task-options">
+            <label class="check-option" for="taskDuration">
+              <input id="taskDuration" type="checkbox" name="taskSelection" value="duration" checked>
+              <span data-i18n="task.duration">Duration discrimination</span>
+            </label>
+            <label class="check-option" for="taskFormant">
+              <input id="taskFormant" type="checkbox" name="taskSelection" value="formant" checked>
+              <span data-i18n="task.formant">Formant discrimination</span>
+            </label>
+            <label class="check-option" for="taskPitch">
+              <input id="taskPitch" type="checkbox" name="taskSelection" value="pitch" checked>
+              <span data-i18n="task.pitch">Pitch discrimination</span>
+            </label>
+            <label class="check-option" for="taskRisetime">
+              <input id="taskRisetime" type="checkbox" name="taskSelection" value="risetime" checked>
+              <span data-i18n="task.risetime">Rise-time discrimination</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="setting-card">
+          <label for="protocolPreset" data-i18n="researcherSetup.protocol.label">Study profile (procedure and stimuli)</label>
+          <select id="protocolPreset">
+            <option value="kachlicka2019" selected data-i18n="protocol.kachlicka2019.label">Kachlicka et al. (2019)</option>
+            <option value="saitoTierney2024" data-i18n="protocol.saitoTierney2024.label">Saito &amp; Tierney (2024; online 2022)</option>
+            <option value="sun2021" data-i18n="protocol.sun2021.label">Sun, Saito, &amp; Tierney (2021)</option>
+          </select>
+          <p id="protocolDescription" class="setting-description" aria-live="polite" data-i18n="protocol.kachlicka2019.description">70 trials or 8 reversals; harder after 3 consecutive correct responses; step sizes 10 → 5 → 2 → 1; threshold based on reversals 2 onward. Uses a reconstruction of the reported stimulus parameters, not the original study files.</p>
+        </div>
+
+        <div class="setting-card">
+          <label for="feedbackMode" data-i18n="researcherSetup.feedback.label">Participant feedback</label>
+          <select id="feedbackMode">
+            <option value="practice_only" selected data-i18n="feedback.practiceOnly.label">Practice only</option>
+            <option value="detailed" data-i18n="feedback.detailed.label">Detailed completion feedback</option>
+          </select>
+          <p id="feedbackDescription" class="setting-description" aria-live="polite" data-i18n="feedback.practiceOnly.description">Correctness feedback is shown during practice only. Main trials do not show correctness or progress.</p>
+        </div>
+      </div>
+
+      <p id="researcherError" class="error-message" role="alert" aria-live="assertive"></p>
+      <div class="button-row">
+        <button id="lockSettings" type="button" data-i18n="researcherSetup.lock">Lock settings and continue</button>
+      </div>
+    </section>
+
+    <section id="setup" class="card" tabindex="-1" aria-labelledby="setupTitle">
+      <div class="tag" data-i18n="setup.tag">Participant setup</div>
+      <h2 id="setupTitle" data-i18n="setup.title">Enter the participant ID</h2>
+      <p id="participantSetupDescription" data-i18n="setup.intro">The participant ID determines a reproducible task order for this session.</p>
+      <div class="stack">
+        <div>
+          <label for="subjectId" data-i18n="setup.subjectId.label">Participant ID</label>
+          <input id="subjectId" type="text" required autocomplete="off" spellcheck="false" placeholder="e.g., S01 or student number" data-i18n-placeholder="setup.subjectId.placeholder" aria-describedby="subjectIdHelp">
+          <p id="subjectIdHelp" class="status" data-i18n="setup.subjectId.help">The same ID gives the same order; a new ID creates a new order automatically.</p>
+        </div>
+        <div class="button-row">
+          <button id="decideOrder" type="button" data-i18n="setup.continue">Set order and continue</button>
+          <button id="editSettings" type="button" class="secondary" data-i18n="setup.editSettings">Edit researcher settings</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="overview" class="card" tabindex="-1" aria-labelledby="overviewTitle">
+      <div class="tag" data-i18n="overview.tag">Order confirmation</div>
+      <h2 id="overviewTitle" data-i18n="overview.title">Order for this session</h2>
+      <ol id="orderList" class="order-list" aria-label="Task order" data-i18n-aria-label="overview.orderList.label"></ol>
+      <p class="status" data-i18n="overview.help">The order is locked to the ID. Stay in the same browser until everything is finished.</p>
+      <div class="button-row">
+        <button id="beginBattery" type="button" data-i18n="overview.begin">Start the first task</button>
+      </div>
+    </section>
+
+    <section id="instructions" class="card" tabindex="-1" aria-labelledby="taskTitle">
+      <div class="tag" id="taskTag" data-i18n="instructions.tag">Task instructions</div>
+      <h2 id="taskTitle" data-i18n="instructions.taskName">Task name</h2>
+      <p id="taskDetail" class="highlight" data-i18n="instructions.taskDetail">Three sounds will play in sequence.</p>
+      <p class="status" data-i18n="instructions.sequence">Only the first or third sound differs from the others.</p>
+      <ul>
+        <li data-i18n="instructions.choose">After playback, choose the number (1 or 3) that sounds different.</li>
+        <li data-i18n="instructions.practice">Practice has 5 trials with feedback. Start the main task with Space or the button after practice.</li>
+        <li data-i18n="instructions.main">The main task does not show correctness or trial progress. Conditions adjust automatically.</li>
+      </ul>
+      <div class="button-row">
+        <button id="startPractice" type="button" data-i18n="instructions.startPractice">Start practice</button>
+        <button id="startTest" type="button" disabled data-i18n="instructions.startMain">Start main task (Spacebar also works)</button>
+      </div>
+      <p id="practiceStatus" class="status" role="status" aria-live="polite" aria-atomic="true" data-i18n="instructions.practiceStatus">Complete 5 practice trials, then start the main task with Space or the button.</p>
+    </section>
+
+    <section id="trial" class="card" tabindex="-1" aria-labelledby="trialHeading" aria-describedby="trialPrompt">
+      <div class="tag" id="sessionTag" data-i18n="trial.sessionTag">Listening task</div>
+      <div class="pill" id="taskProgress" role="status" aria-live="polite"></div>
+      <h2 id="trialHeading" data-i18n="trial.heading">Make your choice</h2>
+      <p id="trialPrompt" data-i18n="trial.prompt">Which sound is different? Choose 1 or 3.</p>
+      <p id="playbackStatus" class="status" role="status" aria-live="polite" aria-atomic="true" data-i18n="trial.playing">Playing audio...</p>
+      <div class="response-buttons" role="group" aria-labelledby="trialPrompt" aria-describedby="playbackStatus">
+        <button id="choose1" type="button" disabled aria-label="Choose the first sound" data-i18n-aria-label="trial.chooseFirst" data-i18n="trial.first">1</button>
+        <button id="choose3" type="button" disabled aria-label="Choose the third sound" data-i18n-aria-label="trial.chooseThird" data-i18n="trial.third">3</button>
+      </div>
+      <p id="feedback" class="feedback status" role="status" aria-live="polite" aria-atomic="true"></p>
+    </section>
+
+    <section id="taskComplete" class="card" tabindex="-1" aria-labelledby="completeTitle">
+      <div class="tag" data-i18n="taskComplete.tag">Task complete</div>
+      <h2 id="completeTitle" data-i18n="taskComplete.title">One task is finished</h2>
+      <p id="thresholdText" class="status" role="status" aria-live="polite" hidden></p>
+      <p id="taskCompleteHint" class="status" role="status" aria-live="polite" data-i18n="taskComplete.hint">Continue when you are ready.</p>
+      <div class="button-row">
+        <button id="nextTaskButton" type="button" data-i18n="taskComplete.next">Next task</button>
+      </div>
+    </section>
+
+    <section id="complete" class="card" tabindex="-1" aria-labelledby="participantCompleteTitle">
+      <div class="tag" data-i18n="complete.tag">All tasks complete</div>
+      <h2 id="participantCompleteTitle" data-i18n="complete.title">Thank you</h2>
+      <p data-i18n="complete.intro">You have completed all listening tasks. Please return the device to the researcher.</p>
+      <div id="feedbackSummary" class="feedback-summary" role="status" aria-live="polite">
+        <p data-i18n="complete.feedbackPending">Your session is complete.</p>
+      </div>
+      <div class="button-row">
+        <button id="showResearcherResults" type="button" class="secondary" data-i18n="complete.showResearcherResults">Researcher: show results</button>
+      </div>
+    </section>
+
+    <section id="researcherResults" class="card" tabindex="-1" aria-labelledby="researcherResultsTitle">
+      <div class="tag" data-i18n="researcherResults.tag">Researcher results</div>
+      <h2 id="researcherResultsTitle" data-i18n="researcherResults.title">Session results</h2>
+      <p id="researcherMeta" data-i18n="researcherResults.intro">Review task metrics and download the trial-level or wide-format CSV before starting the next participant.</p>
+
+      <div class="results-section">
+        <h3 data-i18n="researcherResults.metrics.title">Task metrics</h3>
+        <div class="table-scroll" role="region" aria-label="Task metrics" data-i18n-aria-label="researcherResults.metrics.regionLabel" tabindex="0">
+          <table>
+            <caption data-i18n="researcherResults.metrics.caption">Threshold and completion metrics by task</caption>
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="researcherResults.metrics.order">Order</th>
+                <th scope="col" data-i18n="researcherResults.metrics.task">Task</th>
+                <th scope="col" data-i18n="researcherResults.metrics.level">Threshold level</th>
+                <th scope="col" data-i18n="researcherResults.metrics.physical">Physical threshold</th>
+                <th scope="col" data-i18n="researcherResults.metrics.trials">Trials</th>
+                <th scope="col" data-i18n="researcherResults.metrics.reversals">Reversals</th>
+                <th scope="col" data-i18n="researcherResults.metrics.usedReversals">Scored levels</th>
+                <th scope="col" data-i18n="researcherResults.metrics.stopReason">Stop reason</th>
+                <th scope="col" data-i18n="researcherResults.metrics.validity">Estimate available</th>
+              </tr>
+            </thead>
+            <tbody id="metricsTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="results-section">
+        <h3 data-i18n="researcherResults.wide.title">Wide-format preview</h3>
+        <div id="widePreview" class="wide-preview" role="region" aria-label="Wide-format result preview" data-i18n-aria-label="researcherResults.wide.regionLabel" tabindex="0">
+          <p class="status" data-i18n="researcherResults.wide.pending">The participant-level summary will appear here when the session is complete.</p>
+        </div>
+      </div>
+
+      <div id="summaryList" class="summary-list" hidden aria-hidden="true"></div>
+      <p class="status" data-i18n="researcherResults.saveWarning">Results are stored only in this browser session. Download the files before closing the page or starting the next participant.</p>
+      <div class="button-row">
+        <button id="downloadCsv" type="button" data-i18n="researcherResults.downloadTrial">Download trial CSV</button>
+        <button id="downloadWideCsv" type="button" class="secondary" data-i18n="researcherResults.downloadWide">Download wide CSV</button>
+        <button id="nextParticipant" type="button" class="secondary" data-i18n="researcherResults.nextParticipant">Set up next participant</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

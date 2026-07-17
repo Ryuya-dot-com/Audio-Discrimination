@@ -1,0 +1,85 @@
+{
+  "audio_conventions": {
+    "channels": 1,
+    "encoding": "FLAC PCM_16",
+    "formant_reference_cycle": {
+      "f0_hz": 100,
+      "period_samples": 441,
+      "source_start_sample_1_based": 8821,
+      "source_time_s": 0.2
+    },
+    "level_mapping": "filename = published Level + 1",
+    "linear_ramp_indexing": "sample index distance from the zero-valued endpoint; nominal 15 ms reaches plateau at sample index 662 (15.011 ms)",
+    "normalization": "none",
+    "sample_rate_hz": 44100
+  },
+  "generator": {
+    "application": "Praat",
+    "praat_binary_sha256": "2227bad7b09e8aec121ba475409a2beb66bfa8c345189bc0026431a4fb32e1c7",
+    "praat_version": "6.4.19",
+    "script": "tools/reconstruct_stimuli.praat",
+    "script_sha256": "cdd146dc820435fb7769a102d9042701d99115c0744d157f72cd788dee5d9cb4"
+  },
+  "implementation_decisions": [
+    "Pitch is cropped, not time-stretched; the parent 50 ms linear onset and offset convention is retained because the article does not report it.",
+    "Duration ramp is retained because the article does not report it.",
+    "The article text and continuum specify a 330 Hz pitch standard; Table 2 contains an isolated 300 Hz entry, treated as a typographical error.",
+    "Duration frame counts are preserved from the parent set; their maximum deviation from the nominal continuum is one sample (0.022676 ms).",
+    "No peak or RMS normalization is applied.",
+    "Rise-time is absent because it was not included in the source main study."
+  ],
+  "parent_aggregate_sha256": "e8ebb0a5c1a52f5fd2a8be9c8755c33865611c601bdb20c3e7af90a5e589c118",
+  "parent_stimulus_set_id": "saito-tierney-offline-osf-6p8hv-e8ebb0a5",
+  "reported_target_parameters": {
+    "duration_discrimination": {
+      "carrier": "same_four_harmonic_complex_as_pitch",
+      "comparison_duration_ms": {
+        "level_1": 252.5,
+        "level_100": 500.0,
+        "step": 2.5
+      },
+      "f0_hz": 330.0,
+      "onset_offset_ramp": "not_reported",
+      "standard_duration_ms": 250.0
+    },
+    "formant_discrimination": {
+      "comparison_f2_hz": {
+        "level_1": 1502.0,
+        "level_100": 1700.0,
+        "step": 2.0
+      },
+      "duration_ms": 500.0,
+      "f0_hz": 100.0,
+      "f1_hz": 500.0,
+      "f3_hz": 2500.0,
+      "harmonics_through_hz": 3000.0,
+      "offset_ramp": {
+        "duration_ms": 15.0,
+        "shape": "linear"
+      },
+      "onset_ramp": {
+        "duration_ms": 15.0,
+        "shape": "linear"
+      },
+      "standard_f2_hz": 1500.0
+    },
+    "pitch_discrimination": {
+      "carrier": "four_harmonic_complex_equal_amplitude",
+      "comparison_f0_hz": {
+        "level_1": 330.3,
+        "level_100": 360.0,
+        "step": 0.3
+      },
+      "duration_ms": 250.0,
+      "onset_offset_ramp": "not_reported",
+      "standard_f0_hz": 330.0
+    }
+  },
+  "schema_version": 1,
+  "stimulus_set_id": "saito-tierney2024-reconstruction-v1",
+  "task_transformations": {
+    "duration_discrimination": "identity_pcm_reencode",
+    "formant_discrimination": "tile_steady_100hz_cycle_then_apply_15ms_linear_envelope",
+    "pitch_discrimination": "crop_to_250ms_and_place_source_50ms_offset_at_new_endpoint"
+  }
+}
