@@ -1,27 +1,50 @@
 # Audio Discrimination Battery (Integrated)
 
-The integrated interface can run any subset of four auditory discrimination tasks. It separates researcher setup, participant testing, and researcher results; supports English and Japanese; and exports both trial-level and participant-level wide CSV files. Participants see neutral labels (Listening Task 1–4), while researcher screens and CSV files retain the actual task names.
+The integrated interface can run any supported subset of four auditory discrimination tasks. It separates researcher setup, participant testing, and result handling; supports English and Japanese; and exports a ZIP result package containing trial-level and participant-level wide CSV files plus a machine-readable session manifest. English is the default for a bare URL and for the participant-link language selector; a researcher can explicitly encode Japanese as the starting language.
+
+Participant screens label tasks sequentially by their position in that participant's order (`Listening Task 1`, `Listening Task 2`, and so on). These are neutral session-local labels, not permanent aliases for pitch, formant, duration, or rise-time. Researcher screens, participant-link parameters, CSV files, the manifest, and the public source code retain the actual task IDs. The generated URL therefore is not a participant-blinding mechanism.
 
 The four earlier stand-alone task pages remain available, but the source-audited settings, bilingual workflow, stimulus identity fields, and schema described below apply to the integrated `index.html` only. Do not mix stand-alone and integrated output in one study unless their procedural differences are explicitly modeled.
 
 The evidence and implementation decisions are recorded in [PROCEDURE_AUDIT.md](PROCEDURE_AUDIT.md). Read that document before freezing a study protocol.
 
-## Dummy code mapping (for researchers)
+## Operating modes
 
-- Listening Task 1: Pitch discrimination
-- Listening Task 2: Formant discrimination
-- Listening Task 3: Duration discrimination
-- Listening Task 4: Rise-time discrimination
+The researcher chooses one of two operational flows by the action used on the setup screen:
 
-Actual task names are shown only in researcher setup/results and data files.
+- **Supervised (`administration_mode = supervised`)**: start the session on the same browser/device. At completion, the researcher can inspect the result tables and download the ZIP package or either CSV. The next-participant control remains disabled until a ZIP download has been initiated and then requires a deletion confirmation.
+- **Remote manual return (`administration_mode = remote_manual_upload`)**: create and distribute a participant link. At completion, the participant downloads the ZIP, uploads it through the study's approved external HTTPS return portal, and retains the portal's receipt. The app never uploads data automatically and cannot determine whether the external portal accepted the file.
+
+This repository is a static site. It cannot authenticate invitations, make a link one-time, authenticate a researcher, provide an approved data-receiving backend, or verify a portal receipt. For remote studies, the receiving service, access controls, retention rules, duplicate handling, participant support, and receipt reconciliation must be supplied and approved outside this app. A shared `*.github.io` GitHub Pages origin is **preview-only**: the app displays a warning and blocks entry into a research session there. A study release requires a dedicated HTTPS origin whose deployment approval is separated from source merging.
 
 ## Research workflow
 
-1. Open `index.html` and choose English or Japanese.
-2. On **Researcher setup**, select one or more tasks, a study profile (procedure plus its bound stimulus set), and a participant-feedback mode.
-3. Lock the settings, enter the participant ID, and confirm the neutral task order. The same ID gives the same relative order for the selected tasks.
-4. Hand the device to the participant. Each selected task begins with five practice trials, followed by the main adaptive task.
-5. After the participant finishes, open **Researcher results** and download the trial-level and/or wide-format CSV before starting the next participant.
+1. Open the approved dedicated-origin deployment over HTTPS. A bare URL starts in English. A local `file://` page, localhost, and a shared `*.github.io` project site are for inspection or testing only, not participant data collection.
+2. Enter the required non-participant study metadata: study, condition, site, and distribution IDs; participant-facing title; institution; consent version; expected minutes; and external HTTPS consent and contact URLs. A remote link additionally requires an approved HTTPS result-return portal. Do not enter direct identifiers or credentials in these fields or URLs.
+3. Select one or more available tasks, a study profile (procedure plus its bound stimulus set), feedback mode, and—when creating a link—the participant's starting language. English is selected by default.
+4. Start a supervised session on the current device, or create, archive, and test the **exact** reusable remote link on the approved production origin before distribution. The remote link fixes all study metadata and audited settings and opens at participant onboarding without editable researcher settings.
+5. Before consent confirmation, a remote participant is told that completion requires saving a ZIP, uploading it through the named portal, retaining the portal receipt, and then explicitly clearing the browser copy. The participant reviews the study identity and external consent information, confirms that the study's consent process was completed, and passes the headphone/environment checklist and test-sound playback. This checkbox records a confirmation time; the app does not replace the study's approved consent system.
+6. The participant enters the researcher-supplied pseudonymous code, checks it before starting, and confirms the sequential neutral task order. Each selected task has five practice trials followed by the main adaptive task.
+7. If playback fails, retry the uncommitted presentation or end with a `technical_failure` partial package. The participant can also stop at any time and explicitly delete the browser checkpoint.
+8. Complete result handling for the chosen operating mode. In supervised mode, retain and verify the ZIP before clearing the session. In remote mode, verify that the ZIP exists, upload it to the external portal, retain and reconcile its receipt, and only then use the explicit clear control. The app records the participant's confirmation but cannot verify the upload or receipt.
+
+## Participant links and participant codes
+
+The researcher screen creates a participant link that pins participant-link schema 2, battery version, protocol and protocol version, stimulus-catalog hash, bound stimulus-set ID and manifest hash, selected tasks, feedback mode, starting language, study/condition/site/distribution IDs, participant-facing study title, institution, consent version, expected duration, and the three external URLs. The participant-language selector defaults to English; Japanese is used only when explicitly selected for the generated link. The URL contains neither a participant code nor results, but it is reusable and exposes the named study configuration to anyone who receives it. Treat it according to the study's URL-handling policy.
+
+Participant-link parsing is fail closed. A missing, duplicate, unknown, unsupported, outdated, non-canonical, or internally inconsistent value—including a protocol, task, metadata, HTTPS URL, catalog, set, or manifest mismatch—stops at an invalid-link screen instead of silently falling back to current defaults. Consent, contact, and return URLs must use HTTPS, contain no credentials or display-control characters, and are limited to 1,024 characters each; their URL fragments are preserved. The complete participant link is limited to 4,096 characters. This validation protects the declared configuration, but the static URL is not a cryptographically signed invitation: it does not authenticate a participant and cannot detect replacement by a different otherwise valid configuration.
+
+Participant codes are normalized to uppercase and must contain 1–32 ASCII letters, digits, hyphens, or underscores, beginning with an ASCII letter. Use a pseudonymous study code; do not enter a name, email address, student number, health information, or other directly identifying information. The normalized code seeds a reproducible relative task order for the selected task subset. The overview screen shows the normalized code and allows correction before the battery begins.
+
+### Local recovery and interruption semantics
+
+Before a participant code can start a run, the browser hashes the served `index.html`, `result_bundle.js`, `session_safety.js`, and `script.js`, derives `app_build_sha256`, and freezes that value together with the served `script.js` SHA-256 for the run. After the code is accepted, checkpoint schema 2 stores a pseudonymous recovery copy in `localStorage` at committed boundaries and before each audio presentation. Resume is offered only when the frozen application-asset-set hash, script hash, study configuration, stimulus binding, and checkpoint structure are compatible. A different or structurally invalid configuration is not merged.
+
+To limit storage duplication, checkpoint trial rows omit repeated consent/contact/return URLs, participant-link configuration, and app URL; these values are restored from the validated session-level metadata when the checkpoint is resumed and remain present in exported data. Only one active checkpoint is supported per deployed application path. A foreign owner at the same or a later revision, a different session, a deletion barrier, or an overwrite attempt stops instead of silently combining data. Explicit resume performs a checked one-time ownership transfer.
+
+Playback and preflight audio use abortable waits. Stopping, changing run state, or leaving an active presentation cancels the remaining waits and audio elements. Hiding the page during preflight invalidates the test sound; hiding it during a practice or main presentation aborts the sequence and opens a technical-interruption screen rather than accepting a response. If a browser interruption occurs after an audio presentation was checkpointed but before its response was committed, retry or resume replays that uncommitted presentation. The resulting trial marks `replayed_interrupted_presentation = 1`; session-level `interrupted_presentation_count`, `visibility_interruption_count`, and `resume_count` preserve the deviation history. These fields support review, but they do not decide exclusion. Refreshing, switching tabs, replaying, and technical-failure rules must be prespecified.
+
+The recovery copy persists through normal completion until explicitly cleared. **Stop session** removes the checkpoint only after the browser verifies both the checkpoint removal and a non-identifying deletion-barrier timestamp. If either write or verification fails, the app does not claim deletion and stops at a recovery screen. The barrier prevents another open tab from recreating the deleted run; its minimal timestamp remains locally after the response data and participant code are removed. This operation does not delete ZIP files already downloaded or data already uploaded elsewhere. In supervised mode, starting the next participant uses the same verified deletion path after the ZIP gate and confirmation. Browser storage is not a durable archive and may be cleared by the user, browser, private-browsing policy, or device management.
 
 ## Source-bound procedures and stimuli
 
@@ -52,29 +75,40 @@ The selected feedback mode is recorded in both CSV outputs and should normally r
 
 ## Data output
 
+The primary artifact is `<participant-code>_<session_run_id>_audio_discrimination_results.zip` (result-bundle schema 2). It contains exactly:
+
+- `<participant-code>_<session_run_id>_audio_discrimination_trials.csv`
+- `<participant-code>_<session_run_id>_audio_discrimination_wide.csv`
+- `session_manifest.json`
+
+Including the independently generated `session_run_id` in the ZIP and both CSV filenames prevents two runs with the same participant code from silently receiving the same name; the manifest member intentionally keeps the fixed name `session_manifest.json`. The manifest records pseudonymous-data classification, `automatic_upload_performed = false`, operating mode, session status and timing, study metadata, procedure and stimulus provenance, implementation versions, the frozen application-asset-set and served-`script.js` SHA-256 values, and SHA-256 digests of both CSV members. In remote mode it also states that an external portal receipt is required. The app cannot include or validate that receipt because the portal is external.
+
 ### Trial-level CSV
 
-- File name: `<participant-id>_audio_discrimination.csv`
-- Battery version: `5.0.0`; CSV schema version: `7`.
-- One row per main-task trial.
+- Battery version: `5.2.0`; trial CSV schema version: `10`.
+- One row per **committed** main-task trial. An interrupted presentation that has not received a response does not create a row; ending after a technical error exports all rows committed up to that point.
 - `stimulus_step`, `stimulus_requested_step`, `step_before`, `step_after`, `reversal_level`, `mean_reversal_so_far`, and `threshold_estimate` use the published Level 0–100 scale.
 - `stimulus_file_index`, `stimulus_requested_file_index`, `file_index_before`, and `file_index_after` preserve local FLAC file numbers 1–101.
 - `is_reversal`, `reversal_number`, and `reversal_level` allow the threshold to be reconstructed.
+- Study and run provenance includes `session_run_id`, `administration_mode` (`supervised` or `remote_manual_upload`), study/condition/site/distribution IDs, participant-facing study fields and URLs, consent/preflight markers, `configuration_source` (`researcher_ui` or `participant_link`), `participant_link_schema_version`, `participant_link_validation_status` (`not_applicable` or `passed`), `configured_initial_language`, and `participant_link_config`. The normalized link configuration contains no participant code or results.
+- Session integrity fields include current and final status, status reason, session/task timestamps, resume/interruption counts, `replayed_interrupted_presentation`, `app_build_id`, the frozen `app_build_sha256`, the served `script.js` SHA-256, and `app_url`. Exported terminal runs are `completed` or `technical_failure`; an explicit stop deletes the local checkpoint instead of creating a submitted run. A technical partial export uses `session_final_status = technical_failure` even though rows committed earlier may retain their then-current `session_status`.
 - Source/procedure audit columns include `battery_version`, `protocol_id`, `protocol_version`, `protocol_source_locator`, `protocol_source_audit_status`, `procedure_scope`, source-study task scope, `step_sizes`, `first_scored_reversal`, `threshold_aggregation`, timing fields, practice fields, `task_order_method`, and `ui_language`.
 - Stimulus lineage columns identify the protocol binding, catalog, selected set and version, set kind and claim, parameter profile, set/manifest/task digests, transformation, generator identity, source citation, licence status, validation status, parent set, and parent source archive. The common fields include `protocol_stimulus_binding_id`, `stimulus_catalog`, `stimulus_catalog_schema_version`, `stimulus_catalog_sha256`, `stimulus_set_id`, `stimulus_set_version`, `stimulus_set_kind`, `stimulus_claim`, `stimulus_parameter_profile_id`, `stimulus_manifest`, `stimulus_manifest_sha256`, `stimulus_set_sha256`, `stimulus_source_citation`, `stimulus_source_locator`, `stimulus_parent_set_id`, `stimulus_parent_manifest`, `stimulus_parent_set_sha256`, `stimulus_parent_source_locator`, `stimulus_source_archive_sha256`, `stimulus_parent_source_archive_sha256`, `stimulus_provenance_verification`, `stimulus_validation_status`, `stimulus_audit_date`, and `stimulus_standard_file_index`.
 - Generator lineage is recorded in `stimulus_generator`, `stimulus_generator_version`, `stimulus_generator_script`, `stimulus_generator_script_sha256`, `stimulus_parameters_file`, and `stimulus_parameters_sha256`. Rights metadata uses `stimulus_license` and `stimulus_license_note`. Trial rows additionally contain `stimulus_task_sha256` and `stimulus_task_transformation`.
-- `stimulus_file_index` and the Level fields identify the exact file used within the set; set identity must never be inferred from a file number alone. Schema 7 uses `stimulus_error_policy = fatal_no_substitution`, so `stimulus_substituted` is retained for backward-compatible analysis but is always zero in a successfully recorded trial.
+- `stimulus_file_index` and the Level fields identify the exact file used within the set; set identity must never be inferred from a file number alone. Schema 10 uses `stimulus_error_policy = fatal_no_substitution`, so `stimulus_substituted` is retained for backward-compatible analysis but is always zero in a successfully recorded trial.
+- CSV string cells beginning with optional whitespace followed by `=`, `+`, `-`, or `@` are prefixed with an apostrophe, and cells containing commas, quotes, CR, or LF are CSV-quoted. This reduces spreadsheet formula/record injection risk; analysis importers should still treat exported fields as data rather than executable formulas.
 - Final task columns include `termination_reason`, `scored_reversal_count`, `reversal_levels_used`, `threshold_available`, and `target_reversals_reached`.
 
 ### Wide-format CSV
 
-- File name: `<participant-id>_audio_discrimination_wide.csv`
-- Wide schema version: `5`
+- Wide schema version: `8`.
 - One participant per row, with a stable set of columns for all four tasks. Unselected tasks remain blank and have `<task>_selected = 0`.
-- Common fields include participant ID, code/schema version, procedure source, procedure–stimulus binding, complete stimulus lineage, feedback mode, selected tasks, task order, timestamps, language use, staircase/timing/practice parameters, and completion status.
-- Each task prefix (`pitch_`, `formant_`, `duration_`, `risetime_`) includes whether the task belongs to the selected source study, task-level stimulus digest and transformation, its Level threshold, mean file index, physical threshold, unit, trials, reversals, scored reversal Levels, stopping reason, estimate availability, target-reversal status, median RT, practice accuracy, and stimulus-substitution count. The task-lineage columns are `<task>_stimulus_task_sha256` and `<task>_stimulus_task_transformation`.
+- Common fields include participant code, study/site/distribution identity, schema and run IDs, operating mode, configuration provenance, session status/reason/timestamps, consent and preflight markers, interruption and resume counts, build/script identity, procedure source, procedure–stimulus binding, complete stimulus lineage, feedback mode, selected tasks, task order, language use, and staircase/timing/practice parameters.
+- Each task prefix (`pitch_`, `formant_`, `duration_`, `risetime_`) includes whether the task belongs to the selected source study, task-level stimulus digest and transformation, task start/end timestamps, its Level and file-index threshold, physical threshold, unit, trials, reversals, scored reversal Levels, stopping reason, estimate availability, target-reversal status, median RT, practice accuracy, and stimulus-substitution count.
 
-The researcher results page shows a readable task-by-task table and an analysis-oriented subset of the one-row wide record. Provenance hashes and machine-readable audit fields remain in the downloaded CSV but are not exposed as internal labels in the UI. No group-level z-score composites or inferential tests are calculated in the browser; those require the full sample and a prespecified analysis plan.
+The supervised researcher-results page shows a readable task-by-task table and an analysis-oriented subset of the one-row wide record. Provenance hashes and machine-readable audit fields remain in the downloaded CSV and manifest but are not all repeated in the UI. No group-level z-score composites or inferential tests are calculated in the browser; those require the full sample and a prespecified analysis plan.
+
+Before importing a returned package, run `python tools/validate_result_bundle.py <path-to-results.zip>`. The validator treats the ZIP as untrusted input and rejects unexpected or unsafe members, duplicate JSON keys, schema drift, digest failures, CSV formula-bearing cells, inconsistent run/build/status fields, invalid terminal states, and operating-mode/portal-receipt contradictions. A `VALID` result establishes internal package integrity under result-bundle schema 2; it does not authenticate the participant, invitation, external portal, or study authorization.
 
 ## Published Levels and physical units
 
@@ -89,7 +123,7 @@ Local files are one-based, while the published continuum is zero-based:
 | Duration | 250 ms | 252.5–500 ms | `2.5 × L` ms duration difference |
 | Rise time | 15 ms | 17.85–300 ms | `2.85 × L` ms rise-time difference |
 
-For example, a pitch `threshold_estimate` of Level 10 corresponds to a 3 Hz F0 difference. No manual subtraction is required for schema version 2–7 CSV files. Older files without `schema_version` stored file indices and still require subtracting 1.
+For example, a pitch `threshold_estimate` of Level 10 corresponds to a 3 Hz F0 difference. No manual subtraction is required for schema version 2–10 CSV files. Older files without `schema_version` stored file indices and still require subtracting 1.
 
 ## Stimulus sets, provenance, and reconstruction
 
@@ -186,14 +220,31 @@ Passing these checks establishes deterministic derivation from the frozen parent
 
 The OSF project does not declare a licence for the offline FLAC archive. Creating and locally validating a derivative does not itself grant permission to redistribute it. The browser also never substitutes another file for a missing or unreadable stimulus: playback stops, the response is not accepted, and no trial row is recorded. Repair the inventory, rerun all applicable checks, and follow the preregistered technical-failure rule.
 
+## Runtime audio loading
+
+The active task still creates 101 lightweight `Audio` objects so each file index has a stable runtime mapping, but every object uses `preload = none`. Entering a task warms only the standard, starting, and practice comparison files; each adaptive file is requested when needed, and the next required step is warmed after a committed response. The browser therefore does not preload all 101 stimulus files for every selected task. Cache behavior and duplicate request coalescing remain browser-dependent, so validate the supported browser/network matrix before release.
+
+An audio load, playback rejection, media error, or playback timeout is a fatal presentation error: response controls remain closed and no row is committed. The participant can retry the same uncommitted presentation; retries/resume after an interrupted presentation are counted and marked as deviations. Ending instead records `technical_failure` and makes the partial ZIP available. No threshold should be inferred for an unfinished task unless the prespecified analysis rule explicitly permits it.
+
+## CI and release control
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs JavaScript syntax checks, UI/result-bundle contract tests, ZIP/checksum tests, frozen-parent and runtime-registry verification, all three acoustic profiles, and reconstructed-metadata verification with the pinned Praat 6.4.19 binary. A passing workflow verifies the checked-in contracts and artifacts; it does not replace participant UAT, ethics approval, browser/device testing, portal testing, or deployment approval.
+
+Use [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) before every study release. In addition to the CI result, archive the exact commit/tag, dedicated production origin, the exact distributed participant link, application-asset-set and served-script SHA-256 values, approved protocol/consent versions, supported browser/device evidence, selected operating mode, external return-portal evidence, known limitations, and rollback target. A workflow in which merging to the source branch immediately changes production does not satisfy the required deployment-approval separation. [NOTICE.md](NOTICE.md) records the present artifact/right status. Code, source audio, and derivative-stimulus rights must be resolved separately; no audio licence is inferred from repository presence or successful validation.
+
 ## Required files and placement
 
 Keep the catalog, frozen parent, and reconstructed sets in their recorded locations alongside the integrated application:
 
 ```
 audio_discrimination/
+  ├ .github/workflows/ci.yml
   ├ index.html
   ├ script.js
+  ├ result_bundle.js
+  ├ session_safety.js
+  ├ RELEASE_CHECKLIST.md
+  ├ NOTICE.md
   ├ STIMULUS_CATALOG.json
   ├ STIMULUS_MANIFEST.json
   ├ RECONSTRUCTION_VALIDATION.json
@@ -207,7 +258,7 @@ audio_discrimination/
       └ saito-tierney2024-reconstruction-v1/
 ```
 
-The top-level task folders are the frozen parent distribution; the bound set under `stimulus_sets/` supplies runtime audio. Do not rename, move, or edit individual files after manifests are written. Results live in browser memory, so download both required files before closing the page or starting the next participant.
+The top-level task folders are the frozen parent distribution; the bound set under `stimulus_sets/` supplies runtime audio. Do not rename, move, or edit individual files after manifests are written. In-progress and completed sessions have a browser-local recovery checkpoint, but that checkpoint is neither an archive nor transmission. Retain and verify the ZIP package before clearing the session; in remote mode, also complete and reconcile the external portal receipt.
 
 ## References
 
