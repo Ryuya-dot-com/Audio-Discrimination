@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; connect-src 'self'; img-src 'self' data:; media-src 'self'; object-src 'none'; script-src 'self'; style-src 'unsafe-inline'; form-action 'none'">
   <link rel="icon" href="data:,">
   <title data-i18n="app.title">Audio Discrimination Battery</title>
   <style>
@@ -39,6 +41,8 @@
       z-index: 10;
       top: 0;
       display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
       justify-content: flex-end;
       padding: 12px max(20px, env(safe-area-inset-right));
       background: var(--surface);
@@ -58,8 +62,8 @@
 
     .language-switch button {
       min-width: 68px;
-      min-height: 36px;
-      padding: 6px 10px;
+      min-height: 44px;
+      padding: 10px 12px;
       background: var(--surface);
       color: var(--text);
       border-color: var(--border);
@@ -79,6 +83,7 @@
 
     .card {
       display: none;
+      scroll-margin-top: 88px;
       padding: clamp(20px, 4vw, 32px);
       background: var(--surface);
       border: 1px solid var(--border);
@@ -137,6 +142,8 @@
     select { font: inherit; }
 
     input[type="text"],
+    input[type="url"],
+    input[type="number"],
     select {
       width: 100%;
       min-height: 44px;
@@ -164,6 +171,28 @@
       background: var(--accent);
       font-weight: 600;
       cursor: pointer;
+    }
+
+    .button-row a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      background: var(--surface);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .button-row a:hover { background: var(--surface-muted); }
+
+    a[aria-disabled="true"] {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: auto;
     }
 
     button.secondary {
@@ -256,6 +285,77 @@
     }
 
     .setting-card.full-width { grid-column: 1 / -1; }
+
+    .participant-link-output {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field-grid .full-width { grid-column: 1 / -1; }
+
+    .notice-box,
+    .warning-box {
+      margin: 14px 0;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-muted);
+    }
+
+    .warning-box {
+      border-color: #f4c7c3;
+      background: #fff7f6;
+      color: var(--error);
+    }
+
+    .notice-box p:last-child,
+    .warning-box p:last-child { margin-bottom: 0; }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .checklist .check-option { align-items: flex-start; }
+
+    .session-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: auto;
+    }
+
+    .session-controls button {
+      min-height: 44px;
+      padding: 10px 12px;
+      color: var(--error);
+      background: var(--surface);
+      border-color: #e6a8a2;
+    }
+
+    .session-controls button:hover:not(:disabled) {
+      color: #7a271a;
+      background: #fff1f0;
+      border-color: #d92d20;
+    }
+
+    .metadata-list {
+      display: grid;
+      grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr);
+      gap: 7px 14px;
+      margin: 14px 0;
+    }
+
+    .metadata-list dt { font-weight: 700; }
+    .metadata-list dd { margin: 0; overflow-wrap: anywhere; }
 
     .task-options {
       display: grid;
@@ -413,8 +513,12 @@
         padding-inline: 12px;
       }
       .settings-grid,
-      .task-options { grid-template-columns: 1fr; }
+      .task-options,
+      .field-grid { grid-template-columns: 1fr; }
       .setting-card.full-width { grid-column: auto; }
+      .field-grid .full-width { grid-column: auto; }
+      .metadata-list { grid-template-columns: 1fr; gap: 2px; }
+      .metadata-list dd { margin-bottom: 8px; }
       .button-row { align-items: stretch; }
       .button-row button { flex: 1 1 100%; }
       .response-buttons { gap: 16px; }
@@ -429,14 +533,23 @@
 </head>
 <body>
   <header class="app-toolbar">
+    <div id="sessionControls" class="session-controls" hidden>
+      <button id="stopSession" type="button" data-i18n="session.stop">Stop session</button>
+    </div>
     <div class="language-switch" role="group" aria-label="Language" data-i18n-aria-label="language.label">
       <span class="language-label" data-i18n="language.label">Language</span>
       <button id="langEn" type="button" aria-pressed="true" data-language="en" data-i18n="language.english">English</button>
-      <button id="langJa" type="button" aria-pressed="false" data-language="ja" data-i18n="language.japanese">Japanese</button>
+      <button id="langJa" type="button" aria-pressed="false" data-language="ja" data-i18n="language.japanese">日本語</button>
     </div>
   </header>
 
   <main id="app">
+    <section id="invalidLink" class="card" tabindex="-1" aria-labelledby="invalidLinkTitle">
+      <div class="tag" data-i18n="invalidLink.tag">Study link</div>
+      <h1 id="invalidLinkTitle" data-i18n="invalidLink.title">This study link cannot be used</h1>
+      <p data-i18n="invalidLink.message">The link is invalid or belongs to another battery version. Contact the researcher for a new link.</p>
+    </section>
+
     <section id="researcherSetup" class="card active" tabindex="-1" aria-labelledby="researcherSetupTitle">
       <div class="tag" data-i18n="researcherSetup.tag">Researcher setup</div>
       <h1 id="researcherSetupTitle" data-i18n="researcherSetup.title">Configure the listening battery</h1>
@@ -444,8 +557,61 @@
 
       <div class="settings-grid">
         <fieldset class="setting-card full-width">
+          <legend data-i18n="studyDetails.legend">Study details</legend>
+          <p class="status" data-i18n="studyDetails.help">These non-participant details identify the study, support consent and recovery, and are stored in both result files. Direct identifiers must not be entered.</p>
+          <div class="field-grid">
+            <div>
+              <label for="studyId" data-i18n="studyDetails.studyId.label">Study ID</label>
+              <input id="studyId" type="text" required maxlength="64" pattern="[A-Za-z][A-Za-z0-9_-]{0,63}" placeholder="e.g., AP_STUDY_01" data-i18n-placeholder="studyDetails.studyId.placeholder">
+            </div>
+            <div>
+              <label for="conditionId" data-i18n="studyDetails.conditionId.label">Condition ID</label>
+              <input id="conditionId" type="text" required maxlength="64" pattern="[A-Za-z][A-Za-z0-9_-]{0,63}" placeholder="e.g., BASELINE" data-i18n-placeholder="studyDetails.conditionId.placeholder">
+            </div>
+            <div>
+              <label for="siteId" data-i18n="studyDetails.siteId.label">Site ID</label>
+              <input id="siteId" type="text" required maxlength="64" pattern="[A-Za-z][A-Za-z0-9_-]{0,63}" placeholder="e.g., TOKYO_LAB" data-i18n-placeholder="studyDetails.siteId.placeholder">
+            </div>
+            <div>
+              <label for="distributionId" data-i18n="studyDetails.distributionId.label">Distribution ID</label>
+              <input id="distributionId" type="text" required maxlength="64" pattern="[A-Za-z][A-Za-z0-9_-]{0,63}" placeholder="e.g., WAVE_01" data-i18n-placeholder="studyDetails.distributionId.placeholder">
+            </div>
+            <div class="full-width">
+              <label for="studyTitle" data-i18n="studyDetails.title.label">Participant-facing study title</label>
+              <input id="studyTitle" type="text" required maxlength="120" placeholder="e.g., Listening Study" data-i18n-placeholder="studyDetails.title.placeholder">
+            </div>
+            <div>
+              <label for="institutionName" data-i18n="studyDetails.institution.label">Institution</label>
+              <input id="institutionName" type="text" required maxlength="120" placeholder="e.g., Example University" data-i18n-placeholder="studyDetails.institution.placeholder">
+            </div>
+            <div>
+              <label for="consentVersion" data-i18n="studyDetails.consentVersion.label">Consent version</label>
+              <input id="consentVersion" type="text" required maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9_.-]{0,63}" placeholder="e.g., 2026-01" data-i18n-placeholder="studyDetails.consentVersion.placeholder">
+            </div>
+            <div>
+              <label for="expectedMinutes" data-i18n="studyDetails.minutes.label">Expected duration (minutes)</label>
+              <input id="expectedMinutes" type="number" required min="1" max="240" step="1" value="30">
+            </div>
+            <p class="status full-width" data-i18n="studyDetails.publicUrlHelp">These URLs are embedded in the reusable participant link. Use public study pages only; never include credentials, access tokens, or participant-specific secrets.</p>
+            <div>
+              <label for="consentUrl" data-i18n="studyDetails.consentUrl.label">Consent information URL (HTTPS)</label>
+              <input id="consentUrl" type="url" required maxlength="1024" placeholder="https://…">
+            </div>
+            <div>
+              <label for="contactUrl" data-i18n="studyDetails.contactUrl.label">Researcher contact URL (HTTPS)</label>
+              <input id="contactUrl" type="url" required maxlength="1024" placeholder="https://…">
+            </div>
+            <div class="full-width">
+              <label for="returnUrl" data-i18n="studyDetails.returnUrl.label">Remote result-return portal (HTTPS)</label>
+              <input id="returnUrl" type="url" maxlength="1024" placeholder="https://…" aria-describedby="returnUrlHelp">
+              <p id="returnUrlHelp" class="status" data-i18n="studyDetails.returnUrl.help">Required only when creating a remote participant link. The portal must be approved for study data and provide its own upload receipt.</p>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="setting-card full-width">
           <legend data-i18n="researcherSetup.tasks.legend">Tasks</legend>
-          <p class="status" data-i18n="researcherSetup.tasks.help">Task availability follows the selected study profile. Participants see only neutral Listening Task labels.</p>
+          <p class="status" data-i18n="researcherSetup.tasks.help">Task availability follows the selected study profile. Participant task screens use neutral Listening Task labels; the generated URL carries named task settings.</p>
           <div class="task-options">
             <label class="check-option" for="taskDuration">
               <input id="taskDuration" type="checkbox" name="taskSelection" value="duration" checked>
@@ -482,25 +648,136 @@
             <option value="practice_only" selected data-i18n="feedback.practiceOnly.label">Practice only</option>
             <option value="detailed" data-i18n="feedback.detailed.label">Detailed completion feedback</option>
           </select>
-          <p id="feedbackDescription" class="setting-description" aria-live="polite" data-i18n="feedback.practiceOnly.description">Correctness feedback is shown during practice only. Main trials do not show correctness or progress.</p>
+          <p id="feedbackDescription" class="setting-description" aria-live="polite" data-i18n="feedback.practiceOnly.description">Correctness is shown during the five practice trials. Main trials show no correctness or progress, and the automatic completion feedback is only a completion message. This display setting does not access-protect the researcher-results screen.</p>
+        </div>
+
+        <div class="setting-card full-width">
+          <h2 data-i18n="participantLink.title">Remote participant link</h2>
+          <p data-i18n="participantLink.intro">Create a reusable remote link that fixes the study metadata, procedure, stimuli, tasks, feedback, return portal, and starting language. It contains no participant code or results.</p>
+          <p class="status" data-i18n="participantLink.limitations">Anyone with the link can start a session. It is not proof of identity, a one-time invitation, or a blinding mechanism: the URL carries named study settings, and the researcher-results control is not access-protected. Results remain in the browser that runs the session, so define a supervised or otherwise approved return workflow before remote use.</p>
+          <div>
+            <label for="participantLinkLanguage" data-i18n="participantLink.startLanguage.label">Participant starting language</label>
+            <select id="participantLinkLanguage">
+              <option value="en" selected data-i18n="participantLink.language.en">English</option>
+              <option value="ja" data-i18n="participantLink.language.ja">Japanese</option>
+            </select>
+          </div>
+          <div class="button-row">
+            <button id="createParticipantLink" type="button" class="secondary" data-i18n="participantLink.create">Create participant link</button>
+          </div>
+          <div id="participantLinkOutput" class="participant-link-output" hidden>
+            <label for="participantLink" data-i18n="participantLink.label">Generated participant link</label>
+            <input id="participantLink" type="url" readonly aria-describedby="participantLinkStatus">
+            <div class="button-row">
+              <button id="copyParticipantLink" type="button" data-i18n="participantLink.copy">Copy link</button>
+              <button id="openParticipantLink" type="button" class="secondary" data-i18n="participantLink.open">Open participant view</button>
+            </div>
+          </div>
+          <p id="participantLinkStatus" class="status" role="status" aria-live="polite"></p>
         </div>
       </div>
 
       <p id="researcherError" class="error-message" role="alert" aria-live="assertive"></p>
       <div class="button-row">
-        <button id="lockSettings" type="button" data-i18n="researcherSetup.lock">Lock settings and continue</button>
+        <button id="lockSettings" type="button" data-i18n="researcherSetup.lock">Start a supervised session on this device</button>
+      </div>
+      <p id="buildInfo" class="status" role="status" aria-live="polite"></p>
+      <p id="deploymentOriginWarning" class="warning-box" data-i18n="checkpoint.sharedOrigin" hidden>This GitHub Pages origin is shared with other project sites. It may be used for previewing, but research sessions are blocked until the app is deployed on a dedicated HTTPS origin.</p>
+    </section>
+
+    <section id="participantLanding" class="card" tabindex="-1" aria-labelledby="participantLandingTitle">
+      <div class="tag" data-i18n="landing.tag">Study information</div>
+      <h1 id="participantLandingTitle">Listening study</h1>
+      <p id="participantInstitution" class="highlight"></p>
+      <dl class="metadata-list">
+        <dt data-i18n="landing.studyId">Study ID</dt>
+        <dd id="participantStudyId"></dd>
+        <dt data-i18n="landing.condition">Condition</dt>
+        <dd id="participantConditionId"></dd>
+        <dt data-i18n="landing.site">Site</dt>
+        <dd id="participantSiteId"></dd>
+        <dt data-i18n="landing.duration">Expected duration</dt>
+        <dd id="participantExpectedMinutes"></dd>
+        <dt data-i18n="landing.consentVersion">Consent version</dt>
+        <dd id="participantConsentVersion"></dd>
+      </dl>
+      <div class="notice-box">
+        <p data-i18n="landing.voluntary">Participation is voluntary. You may stop before submitting results. Follow the study consent information for withdrawal or deletion requests.</p>
+        <p data-i18n="landing.localStorage">A pseudonymous recovery copy is stored in this browser until the session is explicitly cleared. Do not use a shared device unless the study permits it.</p>
+        <p id="remoteWorkflowNotice" data-i18n="landing.remoteWorkflow" hidden>For remote participation, completion requires downloading a ZIP, uploading it in the approved portal, checking the portal receipt, and then clearing this browser copy. The app does not upload automatically.</p>
+        <p><a id="participantConsentLink" href="#" target="_blank" rel="noopener noreferrer" data-i18n="landing.openConsent">Open consent information</a></p>
+        <p><a id="participantContactLink" href="#" target="_blank" rel="noopener noreferrer" data-i18n="landing.contactResearcher">Contact the research team</a></p>
+        <p id="remotePortalPreview" hidden><a id="landingReturnPortal" href="#" target="_blank" rel="noopener noreferrer" data-i18n="complete.openPortal">Open result-return portal</a></p>
+      </div>
+      <p id="participantOriginWarning" class="warning-box" data-i18n="checkpoint.sharedOrigin" hidden>This GitHub Pages origin is shared with other project sites. It may be used for previewing, but research sessions are blocked until the app is deployed on a dedicated HTTPS origin.</p>
+      <label class="check-option" for="consentConfirmed">
+        <input id="consentConfirmed" type="checkbox">
+        <span data-i18n="landing.confirmConsent">I confirm that I completed the study’s consent process and want to continue.</span>
+      </label>
+      <p id="landingError" class="error-message" role="alert" aria-live="assertive"></p>
+      <div class="button-row">
+        <button id="continueToPreflight" type="button" data-i18n="landing.continue">Continue to equipment check</button>
+      </div>
+    </section>
+
+    <section id="preflight" class="card" tabindex="-1" aria-labelledby="preflightTitle">
+      <div class="tag" data-i18n="preflight.tag">Equipment check</div>
+      <h1 id="preflightTitle" data-i18n="preflight.title">Prepare for the listening tasks</h1>
+      <p data-i18n="preflight.intro">Complete this check before entering the participant code. Use headphones, a quiet place, and a stable connection.</p>
+      <div class="checklist">
+        <label class="check-option" for="checkHeadphones">
+          <input id="checkHeadphones" type="checkbox" name="preflightCheck">
+          <span data-i18n="preflight.headphones">My headphones are connected and working.</span>
+        </label>
+        <label class="check-option" for="checkEnvironment">
+          <input id="checkEnvironment" type="checkbox" name="preflightCheck">
+          <span data-i18n="preflight.environment">I am in a quiet place and have silenced notifications and calls.</span>
+        </label>
+        <label class="check-option" for="checkVolume">
+          <input id="checkVolume" type="checkbox" name="preflightCheck">
+          <span data-i18n="preflight.volume">I will set a comfortable volume during the test sound and will not change it after starting.</span>
+        </label>
+        <label class="check-option" for="checkContinuity">
+          <input id="checkContinuity" type="checkbox" name="preflightCheck">
+          <span data-i18n="preflight.continuity">I can complete each main task without pausing, replaying, refreshing, or switching tabs.</span>
+        </label>
+        <label id="remoteExportCheck" class="check-option" for="checkExport" hidden>
+          <input id="checkExport" type="checkbox" name="preflightCheck" disabled>
+          <span data-i18n="preflight.export">This browser and device can download a ZIP and upload it through the approved return portal.</span>
+        </label>
+      </div>
+      <div class="button-row">
+        <button id="playTestSound" type="button" class="secondary" data-i18n="preflight.playTest">Play test sound</button>
+      </div>
+      <p id="preflightStatus" class="status" role="status" aria-live="polite" data-i18n="preflight.notTested">Test sound not yet completed.</p>
+      <p id="preflightError" class="error-message" role="alert" aria-live="assertive"></p>
+      <div class="button-row">
+        <button id="continueToCode" type="button" data-i18n="preflight.continue">Continue to participant code</button>
+      </div>
+    </section>
+
+    <section id="resumeSession" class="card" tabindex="-1" aria-labelledby="resumeTitle">
+      <div class="tag" data-i18n="resume.tag">Saved session found</div>
+      <h1 id="resumeTitle" data-i18n="resume.title">Resume your saved session?</h1>
+      <p id="resumeDescription"></p>
+      <p class="status" data-i18n="resume.help">Resume only if this is your session. Starting over deletes its local response data and participant code; a non-identifying deletion time remains to stop another open tab from recreating it.</p>
+      <div class="button-row">
+        <button id="resumeSavedSession" type="button" data-i18n="resume.resume">Resume saved session</button>
+        <button id="discardSavedSession" type="button" class="secondary" data-i18n="resume.discard">Delete it and start over</button>
       </div>
     </section>
 
     <section id="setup" class="card" tabindex="-1" aria-labelledby="setupTitle">
       <div class="tag" data-i18n="setup.tag">Participant setup</div>
-      <h2 id="setupTitle" data-i18n="setup.title">Enter the participant ID</h2>
-      <p id="participantSetupDescription" data-i18n="setup.intro">The participant ID determines a reproducible task order for this session.</p>
+      <h1 id="setupTitle" data-i18n="setup.title">Enter the participant code</h1>
+      <p id="participantSetupDescription" data-i18n="setup.intro">The participant code determines a reproducible task order for this session.</p>
+      <p id="participantLinkNotice" class="setting-card" data-i18n="participantLink.loaded" hidden>Study settings were loaded from the participant link. Research settings cannot be changed on this page.</p>
       <div class="stack">
         <div>
-          <label for="subjectId" data-i18n="setup.subjectId.label">Participant ID</label>
-          <input id="subjectId" type="text" required autocomplete="off" spellcheck="false" placeholder="e.g., S01 or student number" data-i18n-placeholder="setup.subjectId.placeholder" aria-describedby="subjectIdHelp">
-          <p id="subjectIdHelp" class="status" data-i18n="setup.subjectId.help">The same ID gives the same order; a new ID creates a new order automatically.</p>
+          <label for="subjectId" data-i18n="setup.subjectId.label">Participant code</label>
+          <input id="subjectId" type="text" required autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" maxlength="32" pattern="[A-Za-z][A-Za-z0-9_-]{0,31}" placeholder="e.g., P001" data-i18n-placeholder="setup.subjectId.placeholder" aria-describedby="subjectIdHelp subjectIdError">
+          <p id="subjectIdHelp" class="status" data-i18n="setup.subjectId.help">Enter the pseudonymous study code supplied by the researcher. Do not enter a name, email address, student number, or health information.</p>
+          <p id="subjectIdError" class="error-message" role="alert" aria-live="assertive"></p>
         </div>
         <div class="button-row">
           <button id="decideOrder" type="button" data-i18n="setup.continue">Set order and continue</button>
@@ -511,17 +788,22 @@
 
     <section id="overview" class="card" tabindex="-1" aria-labelledby="overviewTitle">
       <div class="tag" data-i18n="overview.tag">Order confirmation</div>
-      <h2 id="overviewTitle" data-i18n="overview.title">Order for this session</h2>
+      <h1 id="overviewTitle" data-i18n="overview.title">Order for this session</h1>
+      <div class="notice-box">
+        <p><strong data-i18n="overview.codeLabel">Participant code:</strong> <span id="overviewParticipantCode"></span></p>
+        <p class="status" data-i18n="overview.codeCheck">Check this code carefully before starting. It will identify both result files.</p>
+      </div>
       <ol id="orderList" class="order-list" aria-label="Task order" data-i18n-aria-label="overview.orderList.label"></ol>
-      <p class="status" data-i18n="overview.help">The order is locked to the ID. Stay in the same browser until everything is finished.</p>
+      <p class="status" data-i18n="overview.help">The list position is the task order. Stable Listening Task labels identify task types. Stay in the same browser until everything is finished.</p>
       <div class="button-row">
         <button id="beginBattery" type="button" data-i18n="overview.begin">Start the first task</button>
+        <button id="editParticipantCode" type="button" class="secondary" data-i18n="overview.editCode">Correct participant code</button>
       </div>
     </section>
 
     <section id="instructions" class="card" tabindex="-1" aria-labelledby="taskTitle">
       <div class="tag" id="taskTag" data-i18n="instructions.tag">Task instructions</div>
-      <h2 id="taskTitle" data-i18n="instructions.taskName">Task name</h2>
+      <h1 id="taskTitle" data-i18n="instructions.taskName">Task name</h1>
       <p id="taskDetail" class="highlight" data-i18n="instructions.taskDetail">Three sounds will play in sequence.</p>
       <p class="status" data-i18n="instructions.sequence">Only the first or third sound differs from the others.</p>
       <ul>
@@ -539,7 +821,7 @@
     <section id="trial" class="card" tabindex="-1" aria-labelledby="trialHeading" aria-describedby="trialPrompt">
       <div class="tag" id="sessionTag" data-i18n="trial.sessionTag">Listening task</div>
       <div class="pill" id="taskProgress" role="status" aria-live="polite"></div>
-      <h2 id="trialHeading" data-i18n="trial.heading">Make your choice</h2>
+      <h1 id="trialHeading" data-i18n="trial.heading">Make your choice</h1>
       <p id="trialPrompt" data-i18n="trial.prompt">Which sound is different? Choose 1 or 3.</p>
       <p id="playbackStatus" class="status" role="status" aria-live="polite" aria-atomic="true" data-i18n="trial.playing">Playing audio...</p>
       <div class="response-buttons" role="group" aria-labelledby="trialPrompt" aria-describedby="playbackStatus">
@@ -549,9 +831,29 @@
       <p id="feedback" class="feedback status" role="status" aria-live="polite" aria-atomic="true"></p>
     </section>
 
+    <section id="technicalError" class="card" tabindex="-1" aria-labelledby="technicalErrorTitle">
+      <div class="tag" data-i18n="technicalError.tag">Technical interruption</div>
+      <h1 id="technicalErrorTitle" data-i18n="technicalError.title">The sound could not be played reliably</h1>
+      <p id="technicalErrorIntro" data-i18n="technicalError.intro">Do not answer this trial. Check the connection and headphones, then retry. The current session has been saved locally.</p>
+      <p><strong data-i18n="technicalError.codeLabel">Error code:</strong> <span id="technicalErrorCode"></span></p>
+      <p id="technicalErrorStatus" class="status" role="status" aria-live="polite"></p>
+      <div class="button-row">
+        <button id="retryAudio" type="button" data-i18n="technicalError.retry">Retry this trial</button>
+        <button id="endTechnicalSession" type="button" class="secondary" data-i18n="technicalError.end">End and save partial results</button>
+        <a id="technicalContactLink" class="secondary" href="#" target="_blank" rel="noopener noreferrer" data-i18n="technicalError.contact">Contact the research team</a>
+      </div>
+    </section>
+
+    <section id="withdrawn" class="card" tabindex="-1" aria-labelledby="withdrawnTitle">
+      <div class="tag" data-i18n="withdrawn.tag">Session stopped</div>
+      <h1 id="withdrawnTitle" data-i18n="withdrawn.title">The session has been stopped</h1>
+      <p data-i18n="withdrawn.intro">The unsent response data and participant code have been deleted from this browser. A non-identifying deletion time remains to prevent another open tab from restoring the session. Files already saved in Downloads are not deleted. Follow the consent information for any data submitted outside this app.</p>
+      <p><a id="withdrawnContactLink" href="#" target="_blank" rel="noopener noreferrer" data-i18n="landing.contactResearcher">Contact the research team</a></p>
+    </section>
+
     <section id="taskComplete" class="card" tabindex="-1" aria-labelledby="completeTitle">
       <div class="tag" data-i18n="taskComplete.tag">Task complete</div>
-      <h2 id="completeTitle" data-i18n="taskComplete.title">One task is finished</h2>
+      <h1 id="completeTitle" data-i18n="taskComplete.title">One task is finished</h1>
       <p id="thresholdText" class="status" role="status" aria-live="polite" hidden></p>
       <p id="taskCompleteHint" class="status" role="status" aria-live="polite" data-i18n="taskComplete.hint">Continue when you are ready.</p>
       <div class="button-row">
@@ -560,20 +862,38 @@
     </section>
 
     <section id="complete" class="card" tabindex="-1" aria-labelledby="participantCompleteTitle">
-      <div class="tag" data-i18n="complete.tag">All tasks complete</div>
-      <h2 id="participantCompleteTitle" data-i18n="complete.title">Thank you</h2>
-      <p data-i18n="complete.intro">You have completed all listening tasks. Please return the device to the researcher.</p>
+      <div id="participantCompleteTag" class="tag" data-i18n="complete.tag">All tasks complete</div>
+      <h1 id="participantCompleteTitle" data-i18n="complete.title">Thank you</h1>
+      <p id="participantCompleteIntro" data-i18n="complete.intro">You have completed all listening tasks. Keep this page open and follow the researcher’s instructions.</p>
       <div id="feedbackSummary" class="feedback-summary" role="status" aria-live="polite">
         <p data-i18n="complete.feedbackPending">Your session is complete.</p>
       </div>
-      <div class="button-row">
+      <div id="remoteReturnActions" class="notice-box" hidden>
+        <h2 data-i18n="complete.returnTitle">Return your results</h2>
+        <p data-i18n="complete.notSent">This app has not sent your results. Download the result package, upload it through the approved return portal, and keep the portal’s receipt.</p>
+        <p id="remoteSessionReference" class="status"></p>
+        <div class="button-row">
+          <button id="participantDownloadBundle" type="button" data-i18n="complete.downloadBundle">Download result package</button>
+          <a id="participantReturnPortal" href="#" target="_blank" rel="noopener noreferrer" data-i18n="complete.openPortal">Open result-return portal</a>
+          <button id="confirmReturnAndDelete" type="button" class="secondary" data-i18n="complete.confirmReturn">I have the portal receipt; clear this browser copy</button>
+        </div>
+        <p id="participantReturnStatus" class="status" role="status" aria-live="polite"></p>
+      </div>
+      <div id="supervisedResultActions" class="button-row">
         <button id="showResearcherResults" type="button" class="secondary" data-i18n="complete.showResearcherResults">Researcher: show results</button>
       </div>
     </section>
 
+    <section id="returned" class="card" tabindex="-1" aria-labelledby="returnedTitle">
+      <div class="tag" data-i18n="returned.tag">Return confirmed</div>
+      <h1 id="returnedTitle" data-i18n="returned.title">The local browser copy has been cleared</h1>
+      <p data-i18n="returned.intro">You confirmed that the return portal issued a receipt. The app cleared the local response data and participant code, but it cannot verify the portal upload and cannot delete a ZIP already saved in Downloads. Handle that file according to the consent information.</p>
+      <p><a id="returnedContactLink" href="#" target="_blank" rel="noopener noreferrer" data-i18n="landing.contactResearcher">Contact the research team</a></p>
+    </section>
+
     <section id="researcherResults" class="card" tabindex="-1" aria-labelledby="researcherResultsTitle">
       <div class="tag" data-i18n="researcherResults.tag">Researcher results</div>
-      <h2 id="researcherResultsTitle" data-i18n="researcherResults.title">Session results</h2>
+      <h1 id="researcherResultsTitle" data-i18n="researcherResults.title">Session results</h1>
       <p id="researcherMeta" data-i18n="researcherResults.intro">Review task metrics and download the trial-level or wide-format CSV before starting the next participant.</p>
 
       <div class="results-section">
@@ -609,13 +929,17 @@
       <div id="summaryList" class="summary-list" hidden aria-hidden="true"></div>
       <p class="status" data-i18n="researcherResults.saveWarning">Results are stored only in this browser session. Download the files before closing the page or starting the next participant.</p>
       <div class="button-row">
+        <button id="downloadBundle" type="button" data-i18n="researcherResults.downloadBundle">Download complete result package</button>
         <button id="downloadCsv" type="button" data-i18n="researcherResults.downloadTrial">Download trial CSV</button>
         <button id="downloadWideCsv" type="button" class="secondary" data-i18n="researcherResults.downloadWide">Download wide CSV</button>
-        <button id="nextParticipant" type="button" class="secondary" data-i18n="researcherResults.nextParticipant">Set up next participant</button>
+        <button id="nextParticipant" type="button" class="secondary" disabled data-i18n="researcherResults.nextParticipant">Set up next participant</button>
       </div>
+      <p id="exportStatus" class="status" role="status" aria-live="polite" data-i18n="researcherResults.exportPending">Download the complete result package before setting up the next participant.</p>
     </section>
   </main>
 
+  <script src="session_safety.js"></script>
+  <script src="result_bundle.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

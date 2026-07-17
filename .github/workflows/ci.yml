@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-and-audio:
+    name: Source and audio integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changed lines for whitespace errors
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            git diff --check "$PR_BASE_SHA" "$PR_HEAD_SHA"
+          elif [[ -n "$PUSH_BEFORE_SHA" ]] \
+            && [[ ! "$PUSH_BEFORE_SHA" =~ ^0+$ ]] \
+            && git cat-file -e "${PUSH_BEFORE_SHA}^{commit}" 2>/dev/null; then
+            git diff --check "$PUSH_BEFORE_SHA" "$GITHUB_SHA"
+          else
+            git diff-tree --check --no-commit-id --root -r "$GITHUB_SHA"
+          fi
+
+      - name: Reject private release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f NOTICE.md
+          test -z "$(git ls-files '*.pdf' '*.PDF')"
+          test -z "$(git ls-files '*_audio_discrimination*.csv' '*_audio_discrimination*.zip')"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check script.js
+          node --check result_bundle.js
+          node --check session_safety.js
+          node --check tools/test_result_bundle.js
+          node --check tools/test_session_safety.js
+          node --check pitch_discrimination/pitch_discrimination.js
+          node --check formant_discrimination/formant_discrimination.js
+          node --check duration_discrimination/duration_discrimination.js
+          node --check risetime_discrimination/risetime_discrimination.js
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify UI and result-bundle contracts
+        run: |
+          python tools/verify_ui_contract.py
+          node tools/test_result_bundle.js
+          node tools/test_session_safety.js
+          python tools/test_validate_result_bundle.py
+
+      - name: Install acoustic-audit dependencies
+        run: python -m pip install numpy==2.4.2 soundfile==0.13.1
+
+      - name: Verify the frozen parent manifest
+        run: python tools/verify_stimulus_manifest.py
+
+      - name: Verify the runtime stimulus registry
+        run: python tools/verify_runtime_stimulus_registry.py
+
+      - name: Audit the Kachlicka stimulus profile
+        run: >-
+          python tools/audit_stimulus_acoustics.py
+          --profile kachlicka2019
+          --root stimulus_sets/kachlicka2019-reconstruction-v1
+
+      - name: Audit the Sun stimulus profile
+        run: >-
+          python tools/audit_stimulus_acoustics.py
+          --profile sun2021
+          --root stimulus_sets/sun2021-reconstruction-v1
+
+      - name: Audit the Saito–Tierney stimulus profile
+        run: >-
+          python tools/audit_stimulus_acoustics.py
+          --profile saito_tierney2024
+          --root stimulus_sets/saito-tierney2024-reconstruction-v1
+
+  reconstructed-metadata:
+    name: Reconstructed metadata provenance
+    runs-on: macos-14
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install metadata-verification dependencies
+        run: python -m pip install numpy==2.4.2 soundfile==0.13.1
+
+      - name: Verify reconstructed metadata with pinned Praat
+        shell: bash
+        run: |
+          set -euo pipefail
+          PRAAT_DMG="$RUNNER_TEMP/praat6419_mac.dmg"
+          PRAAT_MOUNT="$RUNNER_TEMP/praat6419-mount"
+          PRAAT_BINARY="$PRAAT_MOUNT/Praat.app/Contents/MacOS/Praat"
+
+          curl --fail --location --silent --show-error --retry 3 \
+            --output "$PRAAT_DMG" \
+            https://github.com/praat/praat.github.io/releases/download/v6.4.19/praat6419_mac.dmg
+          printf '%s  %s\n' \
+            '7fbf117bc958ba28202d05dd0c8c42a5a6a29bfa4136c2df21a80d2fccd770d9' \
+            "$PRAAT_DMG" | shasum -a 256 --check
+
+          mkdir "$PRAAT_MOUNT"
+          hdiutil attach "$PRAAT_DMG" \
+            -nobrowse -readonly -mountpoint "$PRAAT_MOUNT"
+          trap 'hdiutil detach "$PRAAT_MOUNT" >/dev/null 2>&1 || true' EXIT
+
+          printf '%s  %s\n' \
+            '2227bad7b09e8aec121ba475409a2beb66bfa8c345189bc0026431a4fb32e1c7' \
+            "$PRAAT_BINARY" | shasum -a 256 --check
+          [[ "$("$PRAAT_BINARY" --version)" == \
+            "Praat 6.4.19 (September 4 2024)" ]]
+          python tools/manage_reconstructed_stimuli.py verify \
+            --praat-binary "$PRAAT_BINARY"
+
+          hdiutil detach "$PRAAT_MOUNT"
+          trap - EXIT

@@ -1,7 +1,7 @@
 # 手続き・刺激・測定上の監査記録
 
-- 監査日: 2026-07-17
-- 対象: 統合版 `index.html` / `script.js`、凍結親FLAC 404ファイル、論文別再構成セット3種
+- 監査日: 2026-07-18（文献・刺激監査は2026-07-17、統合版5.2.0の実行・回収手順を2026-07-18に追補）
+- 対象: 統合版 `index.html` / `script.js` / `result_bundle.js` / `session_safety.js`、凍結親FLAC 404ファイル、論文別再構成セット3種、CIとrelease checklist
 - 優先順位: 原著に書かれた事実、ローカルで実測した事実、実装上の解釈を混同しない
 
 ## 結論
@@ -18,6 +18,12 @@
 6. Formantは旧50 ms包絡を単純除算するとfilter start-up transientが露出するため、親配布物の0.200 s以降にある定常100 Hz周期をsample単位で反復し、15 ms包絡を与えました。これは不足するfilter条件をPraat既定値で補う処理ではありません。
 7. Saito–Tierney主研究用セットはpitch・formant・durationの3課題のみです。主研究に含まれないrise-timeは生成せず、同条件では実施できません。
 8. 再構成は、親配布物から宣言した物理仕様へ至る決定論的な来歴を保証しますが、原研究参加者が聴取した波形との同一性は保証しません。CSVは手続き、binding、刺激セット、課題別hash、生成器、パラメータ、親セットまでを保存します。
+9. bare URLの既定言語は英語です。参加者画面では実施順に応じて「リスニング課題1、2…」と連番表示し、この番号をpitch等への固定dummy codeとして扱いません。実課題IDはURL・CSV・manifest・公開sourceに残るため、盲検化機構ではありません。
+10. 研究者設定はstudy／condition／site／distribution ID、研究名、機関、同意文書版、所要時間、外部HTTPS consent/contact URLを必須とします。遠隔参加者用リンクには承認済みHTTPS返却portalも必須です。アプリ内checkboxは外部で完了した同意手続きの確認時刻を記録するもので、倫理審査済み同意手続きを代替しません。
+11. 同一端末の監督下実施 `supervised` と、参加者がZIPを外部portalへ手動返却する `remote_manual_upload` を区別します。静的siteは本人確認、one-time invitation、自動送信、受領証検証を行えません。承認済みbackend／portalと受領照合は研究側が別途提供します。
+12. checkpoint schema 2は回答確定境界と音声提示前に仮名化sessionを `localStorage` へ保存します。再開時の未確定提示は再提示し、逸脱flag・再開数・中断数を記録します。別tab／別session／別buildとの競合は停止し、明示的中止は検証付き削除と削除barrierを実行します。
+13. 結果bundle schema 2のZIPにはtrial schema 10、wide schema 8、`session_manifest.json` を含め、ZIPと両CSVのfilenameに `session_run_id` を入れます。音声失敗は回答を確定せず、再試行または `technical_failure` の部分exportとします。
+14. 共有 `*.github.io` originはpreview専用であり、研究session開始をblockします。本番利用には専用HTTPS origin、mergeと分離したdeployment承認、実配布linkのUAT／archiveが必要です。静的siteの未署名・未認証・非盲検という制約は残ります。
 
 ## 照合した一次資料
 
@@ -167,9 +173,53 @@ python3 tools/verify_reconstruction_reproducibility.py \
 
 各再構成manifestのclaimは `reported_parameter_reconstruction_not_original_study_files` です。検査合格が保証するのは、凍結親セットから記録済み変換を経た来歴、local bytesの同一性、宣言した物理profileへの許容差内の適合です。原PCM／MATLAB生成コードと照合できないため、原研究参加者が聴いた波形との同一性は保証しません。
 
-## CSVに保存する刺激来歴
+## 研究者設定と参加者用リンク
 
-統合版5.0.0はtrial schema 7、wide schema 5を用います。解析時に「同じファイル番号」「同じ課題名」だけで刺激を同一視しないよう、各trialとparticipant-wide recordに次の階層を保存します。
+研究者設定画面では、研究ID、条件ID、実施site ID、配布ID、参加者向け研究名、実施機関、同意文書版、予定所要時間、同意説明URL、研究者連絡先URLを必須とします。各IDはASCII英字で始まる1–64文字、同意文書版は許可文字による1–64文字、所要時間は1–240分です。外部URLはcredentialと表示制御文字を含まないHTTPSに限定し、各URLは1,024文字以内、参加者用リンク全体は4,096文字以内とします。consent/contact/return URLのfragmentは正規化後も保持します。遠隔参加者用リンクを作成する場合だけ、研究データ用に承認され受領証を発行できる外部HTTPS返却portalも必須です。これらの値は直接識別子を入力する欄ではありません。
+
+bare URLと参加者用リンクの言語selectorは英語が既定です。日本語は研究者が参加者用リンクについて明示した場合だけ開始言語になります。研究者は同じbrowser／device上で `supervised` sessionを開始するか、`remote_manual_upload` 用の再利用可能なリンクを生成します。リンクは `link_version`、`battery_version`、`protocol` とその版、`catalog_sha256`、binding先の `stimulus_set` と `manifest_sha256`、選択課題、feedback、開始言語、および上記study metadataを固定します。URLに参加者codeや結果は含みませんが、研究名、条件、protocol、課題名、外部URL等をqueryへ含むため、URLや公開source codeを用いた盲検化機構ではありません。
+
+参加者用リンクはfail closedで検査します。必須値の欠損・重複、未知または非対応の値、非canonicalな順序・URL、旧版、課題scopeの逸脱、metadata形式違反、catalog・set・manifest・protocol bindingの不一致、および変更によってこれらの条件を満たさなくなったリンクは、研究者設定の既定値へfallbackせずinvalid-link画面で停止します。queryなし、または単一の対応言語だけを指定したURLだけが研究者設定入口として有効です。`file://` ではローカルpathを含む共有不能リンクを生成せず、公開済みHTTPS pageから配布用リンクを作成します。
+
+ただし、静的URLに暗号署名や認証はありません。リンクは再利用可能であり、本人確認、一回限りの招待、別の有効構成への置換検知、研究者画面のaccess controlを提供しません。実課題ID、condition、protocol等もURLと公開sourceから判別できるため、盲検化用途には使用しません。外部portalへの認証・upload・retry・duplicate処理・retention・受領証はこのstatic siteの外にあり、アプリはportalがZIPを受領したか検証できません。`remote_manual_upload` では同意確認前から「ZIPを保存 → 承認済みportalへ手動upload → portalの受領証を保持 → browser copyを明示消去」と表示し、この順序を研究手順に定めます。launch linkを送るだけでは結果は返りません。
+
+参加者codeは入力時にuppercaseへ正規化し、ASCII英字で始まる1–32文字のASCII英字・数字・hyphen・underscoreに限定します。氏名、email address、学籍番号、健康情報などの直接識別情報ではなく、研究用の仮名codeを割り当てます。codeは選択課題の決定論的shuffleをseedし、開始前overviewで確認・修正できます。参加者向け課題名は、このshuffle後の実施位置に従う「リスニング課題1、2…」です。番号とpitch／formant／duration／rise-timeの間に固定mappingはありません。
+
+## Onboarding、local recovery、技術的中断
+
+参加者入口は、研究・機関・条件・site・同意版・所要時間の表示、外部consent/contact link、外部同意手続きを完了したとのcheckbox、headphones・静穏環境・音量固定・連続実施の自己確認、test soundから構成されます。全checkboxとtest sound成功後だけ参加者codeへ進みます。端末・browserを研究承認済みと自己申告するcheckboxは設けません。これはheadphone識別test、聴力screen、SPL校正、環境騒音の客観測定ではありません。研究者は対象機器・browser、音量、環境、support、除外規則を別に固定します。
+
+参加者code確定前に、配信中の `index.html`、`result_bundle.js`、`session_safety.js`、`script.js` を個別にSHA-256化し、そのdescriptorから `app_build_sha256` を算出します。run開始時にこのapplication asset-set hashと `app_script_sha256` を固定し、開始後に非同期取得値が混在しないようにします。checkpoint schema 2は `localStorage` に仮名化sessionを保存し、resume互換性では両hash、study構成、stimulus binding、metadata、task subset、checkpoint構造を照合します。回答確定後の状態だけでなく、各音声提示開始前に `active_presentation` を保存するため、reload／browser crash後に同一buildと構成から再開できます。一致しないrecordはmergeしません。
+
+localStorage容量を抑えるため、checkpoint内のtrial rowから繰り返しのconsent/contact/return URL、participant-link構成、app URLを除き、resume時に検証済みsession-level metadataから復元します。CSV／manifestへの出力項目は省略しません。app pathごとにactive checkpointは1件だけで、foreign ownerの同revisionまたは新しいrevision、別session、削除barrier後の書込みは停止します。明示的resumeだけが、保存済みowner・revisionとの一致を再確認した上で一回限りのownership transferを行います。browser storageはarchiveではなく、private browsing、user操作、端末policy等による消失可能性があります。
+
+音声sequenceとpreflight test soundはabort可能な待機・再生として管理し、停止、画面状態変更、再試行等では残りの音声を中止してaudio要素をresetします。「セッションを中止」を押した時点で確認dialogの回答を待たず再生を中止し、参加者が中止確認を取り消した場合、その未確定提示は `PARTICIPANT_STOP_CANCELLED` として同じtrialの再提示を要求します。preflight中にtabがhiddenになればtest sound成功を無効化し、本試行／練習のactive presentation中にhiddenになればsequenceをabortして `VISIBILITY_INTERRUPTION` 画面へ移り、そのまま回答を受け付けません。音声提示開始後、回答確定前に中断されたcheckpointを再開またはretryすると、未確定提示を再提示します。そのtrialは `replayed_interrupted_presentation = 1`、sessionは `interrupted_presentation_count` と `resume_count` を増加させます。tabをhiddenにした回数は `visibility_interruption_count` に記録します。これらは手順逸脱の監査情報であり、自動除外規則ではありません。再提示・tab移動・resume・技術failureの採否は事前登録します。
+
+明示的な「セッションを中止」は、対象session IDを照合し、checkpoint削除と非識別の削除barrier timestampの保存をread-backで検証してから中止画面を表示します。検証に失敗した場合は削除済みと表示せず、再試行／連絡手順を示します。barrier timestampは別tabによる削除済みrunの再作成を停止するためresponse dataと参加者codeの削除後も残ります。この操作は既にdownloadしたZIPや外部へupload済みのcopyを削除しません。監督下flowでは、完全ZIPのdownload開始前は次参加者controlを有効にせず、その後も確認を要求して同じ検証付き削除を行います。遠隔flowではZIP download開始を確認後だけportalを開け、参加者がportal receipt保持を確認した後だけbrowser copy消去を選べます。ただしアプリはdownload完了、portal受領、receiptの真正性を観測できないため、participant／researcher間のreceipt照合と削除時点を外部手順に定めます。
+
+音声のload、playback、timeoutに失敗した提示では回答を受け付けずtrial rowを確定しません。参加者は同じ未確定提示をretryできます。retryは中断提示回数と再提示flagへ反映します。継続しない場合は `session_status = technical_failure`、error code／終了時刻を保存し、確定済みtrialだけを含む部分ZIPを作成できます。checkpoint write failureまたはmulti-tab conflictでは同じtabからのretryを無効にし、data混合を防ぎます。
+
+## CSVに保存する設定・刺激来歴
+
+統合版5.2.0はtrial schema 10、wide schema 8、result bundle schema 2を用います。primary artifactは `<participant-code>_<session_run_id>_audio_discrimination_results.zip` で、次の3 memberを含みます。
+
+- `<participant-code>_<session_run_id>_audio_discrimination_trials.csv`
+- `<participant-code>_<session_run_id>_audio_discrimination_wide.csv`
+- `session_manifest.json`
+
+同じ参加者codeの複数runを上書きしないよう、ZIPと両CSVのfilenameに独立生成した `session_run_id` を含めます。ZIP内manifestだけは固定名 `session_manifest.json` です。manifestは `automatic_upload_performed = false`、`administration_mode`、session status／reason／timestamps、study metadata、procedure、stimulus provenance、実装版、run開始時に固定したapplication asset-setと配信中 `script.js` のSHA-256、両CSVのSHA-256を保存します。`remote_manual_upload` では外部portal receiptが必要であることも宣言しますが、receipt自身を生成・検証しません。
+
+設定配布と実行単位の来歴として、trialとparticipant-wide recordに次を保存します。
+
+1. Study／run: `session_run_id`、`administration_mode`、study／condition／site／distribution ID、研究名、機関、同意版、所要時間、外部URL、consent／preflight時刻とtest sound結果
+2. 状態／時刻: `session_status`、trialの `session_final_status`、`status_reason`、session／task開始終了時刻、`completed_at_utc`。exportされるterminal runは `completed` または `technical_failure` で、明示的中止は提出済みrunを生成せずlocal checkpointを削除
+3. Recovery／deviation: `resume_count`、`interrupted_presentation_count`、`visibility_interruption_count`、trialの `replayed_interrupted_presentation`
+4. Build: `app_build_id`、`index.html`／`result_bundle.js`／`session_safety.js`／`script.js` から算出してrun開始時に固定した `app_build_sha256`、配信中 `script.js` の `app_script_sha256`、`app_url`
+5. Link: `configuration_source`（`researcher_ui` / `participant_link`）、`participant_link_schema_version`、`participant_link_validation_status`（`not_applicable` / `passed`）、`configured_initial_language`、`participant_link_config`
+
+`participant_link_config` は正規化した構成queryであり、参加者codeや結果を含みません。CSV出力時は、文字列cellが任意の空白に続く `=`、`+`、`-`、`@` で始まる場合にapostropheを付与し、comma、quote、CR、LFを含むcellをCSV quoteしてformula／record injectionを抑制します。解析側も文字列を実行可能な式として扱いません。技術的中断時、trial CSVは確定済みmain-trialのみを出力します。以前に確定したrowの `session_status` は当時の `in_progress` のままでも、export時に付与する `session_final_status = technical_failure` と `status_reason` でrunの最終状態を判定します。wide CSVは1 participant/runを1 rowとし、未完了課題のsummaryを空欄にします。
+
+解析時に「同じファイル番号」「同じ課題名」だけで刺激を同一視しないよう、さらに次の刺激来歴を保存します。
 
 1. 手続き: `protocol_id`、`protocol_version`、`protocol_citation`、`protocol_source_locator`
 2. 手続きと刺激の固定対応: `protocol_stimulus_binding_id`
@@ -182,7 +232,7 @@ python3 tools/verify_reconstruction_reproducibility.py \
 
 `stimulus_set_id`と`stimulus_set_sha256`は選択した手続きに応じて動的に変わります。同じ `51.flac` でもsetが異なれば同一刺激とは扱いません。反対に、Kachlicka/Sun再構成は現版でaggregate hashが一致しますが、引用とbindingが異なるため解析上の出典を統合しません。派生set自身の `stimulus_source_archive_sha256` は空欄で、公式ZIPのdigestは `stimulus_parent_source_archive_sha256` に保存します。`stimulus_license` が空欄であることはpublic domainを意味せず、親OSF配布物のlicenseが宣言されていないことを表します。
 
-再解析・データ結合では、最低でも `battery_version`、schema版、`protocol_stimulus_binding_id`、`stimulus_catalog_sha256`、`stimulus_set_id`、`stimulus_set_version`、`stimulus_manifest_sha256`、`stimulus_set_sha256`、課題別hashを照合します。生成scriptまたはparameter hashが異なるrecordは、物理的な要約値が同じでも別刺激版として扱います。
+再解析・データ結合では、最低でも `battery_version`、schema版、`study_id`、`condition_id`、`site_id`、`distribution_id`、`session_run_id`、最終status、`app_script_sha256`、`protocol_stimulus_binding_id`、`stimulus_catalog_sha256`、`stimulus_set_id`、`stimulus_set_version`、`stimulus_manifest_sha256`、`stimulus_set_sha256`、課題別hashを照合します。生成scriptまたはparameter hashが異なるrecordは、物理的な要約値が同じでも別刺激版として扱います。外部portalのreceipt／server-side upload logはZIP外の研究記録として `session_run_id` と照合します。
 
 ## Level、ファイル番号、物理閾値
 
@@ -190,7 +240,7 @@ python3 tools/verify_reconstruction_reproducibility.py \
 
 `published Level = local file index - 1`
 
-統合版schema 7ではCSVの `threshold_estimate` を公開Levelで保存するため、分析時の追加減算は不要です。物理差は次のとおりです。
+統合版schema 10ではCSVの `threshold_estimate` を公開Levelで保存するため、分析時の追加減算は不要です。物理差は次のとおりです。
 
 - Pitch: `0.3 × threshold_estimate` Hz
 - Formant: `2 × threshold_estimate` Hz
@@ -206,7 +256,11 @@ python3 tools/verify_reconstruction_reproducibility.py \
 - 各課題前の5練習試行
 - 練習比較刺激がファイル100＝Level 99
 - 練習中の正誤と正答位置フィードバック
-- 参加者IDによる決定論的な課題順シャッフル
+- 研究metadata、外部consent/contact/return URL、同意確認、headphone／環境check、test soundによるonboarding
+- 仮名化した参加者codeによる決定論的な課題順シャッフル
+- 実施順に従う参加者向け中立連番ラベル
+- `localStorage` checkpoint、resume、未確定提示の再提示、multi-tab conflict停止
+- `supervised` と外部portalへの `remote_manual_upload` の分離、ZIP result bundle
 - 70試行時に異音位置を第1音35回・第3音35回へ均等化
 - 第3音終了後500 msで回答を許可
 - 回答後1000 msで次試行
@@ -217,7 +271,9 @@ python3 tools/verify_reconstruction_reproducibility.py \
 
 練習＋正誤フィードバックはSaito and Tierneyの主研究で実施された手続きではありません。同論文p.1222の脚注で、オンライン信頼性を改善する可能性のある**将来提案**として述べられています。効果が同論文で実証されたわけではありません。
 
-schema 7では欠損刺激の置換を無効化しています。正常に記録されたtrialの `stimulus_substituted` とwide CSVの各課題 `*_stimulus_substitution_count` は常に0です。音声エラーが出た試行は回答を受け付けずCSV行も作らないため、ファイルを修復し、manifest検証と音響検証を通した後、その参加者の再実施規則を事前登録に従って適用します。
+runtimeはactive taskについて101個の `Audio` objectを作りますが、全て `preload = none` です。task開始時にstandard、開始Level、練習comparisonだけをwarmし、adaptive fileは必要時、次stepは回答確定後に先読みします。したがって、選択課題ごとの101刺激を一括preloadしません。ただしbrowser cacheとrequest coalescingは実装依存であり、対象browser／networkで検証します。
+
+schema 10では欠損刺激の置換を無効化しています。正常に記録されたtrialの `stimulus_substituted` とwide CSVの各課題 `*_stimulus_substitution_count` は常に0です。音声エラーが出た提示は回答を受け付けずCSV rowも作りません。retryまたは部分exportのどちらを選ぶか、同じ参加者を再実施するか、部分dataを採用するかは、manifest検証・音響検証・研究の事前登録に従って判断します。
 
 ## 参加者条件・聴力・機器・校正・除外
 
@@ -262,9 +318,16 @@ Saito and Tierneyのabsolute-agreement ICC(2,2)は、formant `.520`、pitch `.52
 
 ## 実装上の版管理
 
-- 統合版: `battery_version = 5.0.0`
-- trial CSV: `schema_version = 7`
-- wide CSV: `wide_schema_version = 5`
+- 統合版: `battery_version = 5.2.0`、`app_build_id = audio-discrimination-5.2.0`
+- trial CSV: `schema_version = 10`
+- wide CSV: `wide_schema_version = 8`
+- 参加者用リンクquery: `link_version = 2`。CSV来歴: `participant_link_schema_version = 2`
+- local recovery: `checkpoint_schema_version = 2`
+- ZIP result package: `result_bundle_schema_version = 2`
+- UI開始言語: bare URLと参加者用リンク言語selectorは英語。日本語は研究者が参加者用リンクについて明示した場合のみ
+- 参加者label: shuffle後の順番に従うneutralな連番。課題typeへの固定mappingなし
+- 実施mode: 同一browser/deviceの `supervised`、または外部portalへ参加者が手動返却する `remote_manual_upload`
+- Build来歴: CSV／manifestに `app_build_id`、配信中のapplication asset-set SHA-256、`script.js` SHA-256、app URLを保存し、run開始後は固定
 - 既定の階段法・採点出典: `kachlicka2019`
 - Kachlicka設定: 原著p.17どおり `first_scored_reversal = 2`。第3反転開始ではない
 - Saito–Tierney設定: `step_sizes = 10|5|1|1|1|1|1|1`
@@ -274,4 +337,8 @@ Saito and Tierneyのabsolute-agreement ICC(2,2)は、formant `.520`、pitch `.52
 - 再構成claim: `reported_parameter_reconstruction_not_original_study_files`
 - 刺激欠損・未検証set・手続きとsetの不一致: fail closed、代替刺激なし
 
-コード、刺激、生成parameter、研究計画のいずれかが変わった場合は、版番号、catalog、manifest、CSV schema、この監査記録を同時に更新します。
+`.github/workflows/ci.yml` はJavaScript syntax、UI/result-bundle contract、ZIP digest、親manifest、runtime registry、3 profileの音響条件、pinned Praat 6.4.19による再構成metadataを検査します。release時は [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) に従い、exact commit/tag、CI run、専用HTTPS production origin、実際に配布する完全なparticipant link、served asset-set／script SHA、approved protocol／consent、browser/device UAT、選択mode、外部portalのend-to-end receipt、known limitations、rollback targetを保存します。artifact／rightsの現状は [NOTICE.md](NOTICE.md) に分離して記録します。CI合格は倫理承認、participant UAT、外部portal検証、音声再配布許諾を意味しません。
+
+共有 `*.github.io` originは他projectとstorage/security boundaryを共有するためpreview専用とし、現実施版はそこでresearch session開始をblockします。本番には研究専用HTTPS originが必要です。また、source branchへのmergeが即時production更新になる構成は、mergeとdeployment承認を分離できないためrelease blockerです。専用origin、staging、承認付きpromotion、rollback targetを整備し、base URLではなく実配布linkそのものをUAT・archiveするまでparticipant募集を開始しません。静的siteの未署名link、本人／研究者認証なし、one-time invitationなし、blindingなし、外部portal受領を検証できないという制約はhosting変更だけでは解消しません。
+
+コードまたは研究計画を変更した場合は、影響範囲に応じてbattery版、trial/wide CSV schema、参加者用link schema、checkpoint schema、result-bundle schema、この監査記録を更新します。刺激bytes、生成parameter、または手続き–刺激bindingを変更した場合だけ、該当するcatalog・manifest・checksumと刺激監査も更新します。UI、checkpoint、result return、link配布だけの変更を刺激artifactの変更として記録せず、反対に刺激監査合格から原研究刺激との同一性や音声licenseを推論しません。

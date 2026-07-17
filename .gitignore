@@ -1,2 +1,5 @@
 .DS_Store
-Readings/*.pdf
+*.pdf
+*.PDF
+*_audio_discrimination*.csv
+*_audio_discrimination*.zip
