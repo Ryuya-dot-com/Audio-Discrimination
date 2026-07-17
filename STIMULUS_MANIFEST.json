@@ -1,0 +1,86 @@
+{
+  "schema_version": 3,
+  "stimulus_set_id": "saito-tierney-offline-osf-6p8hv-e8ebb0a5",
+  "audit_date": "2026-07-17",
+  "provenance": {
+    "status": "official_distribution_verified",
+    "repository": "OSF: Auditory processing & SLA",
+    "repository_url": "https://osf.io/bkj6v/",
+    "source_archive": "OFFLINE AP TESTS.zip",
+    "source_download_url": "https://osf.io/download/6p8hv/",
+    "source_archive_sha256": "70dc8bea86020110f81c2932d5eb05f06f2aaa6f2de3469663e501fbacd96bdb",
+    "verification_result": "404 of 404 local FLAC files are byte-identical to the corresponding files in the source archive.",
+    "osf_project_license": null,
+    "license_note": "The OSF project does not declare a license in its metadata; do not infer a reuse license from the article's CC BY license."
+  },
+  "related_official_materials": [
+    {
+      "name": "IRIS Sound stimuli",
+      "record_url": "https://www.iris-database.org/details/Kl8ck-cx328",
+      "draft_doi": "10.48316/Kl8ck-cx328",
+      "doi_status_checked_2026_07_17": "draft_and_not_resolvable",
+      "license": "CC BY-NC-SA 3.0",
+      "relationship": "Its 404 task-specific MP3 files are byte-identical to the four task-specific MP3 ZIP archives in OSF bkj6v, but they are not byte-identical to this FLAC stimulus set."
+    }
+  ],
+  "aggregate_sha256": "e8ebb0a5c1a52f5fd2a8be9c8755c33865611c601bdb20c3e7af90a5e589c118",
+  "aggregate_algorithm": "For tasks in the listed order and files in numeric order: SHA-256(relative POSIX path + NUL + raw 32-byte SHA-256 of file contents).",
+  "task_order": [
+    "pitch_discrimination",
+    "formant_discrimination",
+    "duration_discrimination",
+    "risetime_discrimination"
+  ],
+  "common_audio_format": {
+    "sample_rate_hz": 44100,
+    "channels": 1,
+    "encoding": "FLAC PCM_16"
+  },
+  "verification_tools": {
+    "identity_and_provenance": "tools/verify_stimulus_manifest.py",
+    "acoustic_invariants": "tools/audit_stimulus_acoustics.py"
+  },
+  "tasks": {
+    "pitch_discrimination": {
+      "file_count": 101,
+      "first_file": "1.flac",
+      "last_file": "101.flac",
+      "task_sha256": "aa40b3cb4bbf7d8ae90441e144021ceb341bcf56b748f804ec3a0631ff940336",
+      "duration_range_s": [0.5, 0.5],
+      "standard_file_duration_s": 0.5,
+      "standard_file_linear_onset_ramp_ms_observed": 50
+    },
+    "formant_discrimination": {
+      "file_count": 101,
+      "first_file": "1.flac",
+      "last_file": "101.flac",
+      "task_sha256": "de353973309b8b8654d41b85b58251150619228a03434ce8831c9a98a0e14351",
+      "duration_range_s": [0.5, 0.5],
+      "standard_file_duration_s": 0.5,
+      "standard_file_linear_onset_ramp_ms_observed": 50
+    },
+    "duration_discrimination": {
+      "file_count": 101,
+      "first_file": "1.flac",
+      "last_file": "101.flac",
+      "task_sha256": "44ce7868bcd047cac0905bdaab608d441bfba227ed566d2fb657df9838bfe5bb",
+      "duration_range_s": [0.25, 0.5],
+      "standard_file_duration_s": 0.25,
+      "standard_file_linear_onset_ramp_ms_observed": 50
+    },
+    "risetime_discrimination": {
+      "file_count": 101,
+      "first_file": "1.flac",
+      "last_file": "101.flac",
+      "task_sha256": "2179751ce53a35739252071e4ba76922ab7bca0b8c3d7a3fa90028b980c3db61",
+      "duration_range_s": [0.5, 0.5],
+      "standard_file_duration_s": 0.5,
+      "standard_file_linear_onset_ramp_ms_observed": 15
+    }
+  },
+  "notes": [
+    "The digests identify the exact local bytes and the provenance check establishes identity with the official OSF offline distribution; neither establishes acoustic equivalence with the stimuli described in any article.",
+    "Observed ramp values are rounded waveform-audit results for 1.flac, not metadata embedded in the FLAC files. See PROCEDURE_AUDIT.md for the method and interpretation.",
+    "The article description, the OSF offline FLAC archive, and the task-specific MP3 archives in the same OSF project contain mutually inconsistent stimulus specifications. The local FLAC files must not be overwritten to reconcile those sources."
+  ]
+}

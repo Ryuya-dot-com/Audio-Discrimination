@@ -1,0 +1,111 @@
+{
+  "acoustic_audit": {
+    "profile": "kachlicka2019",
+    "script": "tools/audit_stimulus_acoustics.py",
+    "script_sha256": "0214554396150f0a4f9bb8a26dc8159aa59f386fca01baeaab210464c340c573"
+  },
+  "aggregate_algorithm": "For tasks in task_order and files in numeric order: SHA-256(relative POSIX path + NUL + raw 32-byte SHA-256 of file contents).",
+  "aggregate_sha256": "ec00a36f74a48ac6e6edcfc77db9817e6cbe34d300c0f62617129d3d43d919c8",
+  "audit_date": "2026-07-17",
+  "checksums_file": "CHECKSUMS.sha256",
+  "checksums_sha256": "a8cebfc7549e5fa9665fd50c4f0879cafacc82ee09d1b9926fbbec51d083847d",
+  "claim": "reported_parameter_reconstruction_not_original_study_files",
+  "common_audio_format": {
+    "channels": 1,
+    "encoding": "FLAC PCM_16",
+    "sample_rate_hz": 44100
+  },
+  "file_count": 404,
+  "generator": {
+    "application": "Praat",
+    "parameters_file": "PARAMETERS.json",
+    "parameters_sha256": "aa53c437761709ec41139afc8fa42acd81f0b0b5edd2600b89610075d6aa05b1",
+    "praat_binary_sha256": "2227bad7b09e8aec121ba475409a2beb66bfa8c345189bc0026431a4fb32e1c7",
+    "praat_version": "6.4.19",
+    "script": "tools/reconstruct_stimuli.praat",
+    "script_sha256": "cdd146dc820435fb7769a102d9042701d99115c0744d157f72cd788dee5d9cb4"
+  },
+  "implementation_decisions": [
+    "15 ms is implemented at 44.1 kHz with a 662-sample transition to plateau.",
+    "No peak or RMS normalization is applied.",
+    "Formant bandwidth, gain, and phase are not supplied by the article; the steady carrier cycle of the parent distribution is retained.",
+    "Duration frame counts are preserved from the parent set; their maximum deviation from the nominal continuum is one sample (0.022676 ms)."
+  ],
+  "kind": "transformed_official_distribution",
+  "license": null,
+  "license_note": "The parent OSF project does not declare a license. Generation and local research use do not establish permission to redistribute this derivative.",
+  "metadata_validation": {
+    "checks": [
+      "exact_inventory",
+      "audio_format_and_frame_count",
+      "zero_endpoints_and_no_clipping",
+      "sample_level_parent_lineage",
+      "file_task_and_set_sha256"
+    ],
+    "script": "tools/manage_reconstructed_stimuli.py",
+    "script_sha256": "f17fd951936e864725302eeb98898e20c98a572595b4451524d88c65de70e11c"
+  },
+  "parent": {
+    "aggregate_sha256": "e8ebb0a5c1a52f5fd2a8be9c8755c33865611c601bdb20c3e7af90a5e589c118",
+    "manifest": "STIMULUS_MANIFEST.json",
+    "official_repository_url": "https://osf.io/bkj6v/",
+    "official_source_archive_sha256": "70dc8bea86020110f81c2932d5eb05f06f2aaa6f2de3469663e501fbacd96bdb",
+    "stimulus_set_id": "saito-tierney-offline-osf-6p8hv-e8ebb0a5"
+  },
+  "reported_parameter_claim": "Matches the reported duration/continuum/ramp parameters; it is not an original-study waveform set.",
+  "schema_version": 1,
+  "stimulus_set_id": "kachlicka2019-reconstruction-v1",
+  "stimulus_set_version": 1,
+  "target_citation": "Kachlicka, Saito, & Tierney (2019)",
+  "target_protocol_id": "kachlicka2019",
+  "target_source_locator": "Brain and Language, 192, p. 17, section 2.2.2",
+  "task_order": [
+    "pitch_discrimination",
+    "formant_discrimination",
+    "duration_discrimination",
+    "risetime_discrimination"
+  ],
+  "tasks": {
+    "duration_discrimination": {
+      "file_count": 101,
+      "first_file": "1.flac",
+      "last_file": "101.flac",
+      "max_peak_fraction_full_scale": 0.900054931640625,
+      "max_peak_pcm16": 29493,
+      "pcm_lineage_verification": "plateau_pcm_identical_to_parent",
+      "task_sha256": "83e3f0ad2174cc6e16330518e6f7239bfeea86188a46185705138ca7caaf2c94",
+      "transformation": "replace_50ms_linear_envelope_with_15ms"
+    },
+    "formant_discrimination": {
+      "file_count": 101,
+      "first_file": "1.flac",
+      "last_file": "101.flac",
+      "max_peak_fraction_full_scale": 0.899993896484375,
+      "max_peak_pcm16": 29491,
+      "pcm_lineage_verification": "plateau_is_parent_cycle_at_0.200s_tiled_sample_exact",
+      "task_sha256": "650433d17e9919d49c47bacdd94205bdb081ff726197ec60a8536f8392639a79",
+      "transformation": "tile_steady_100hz_cycle_then_apply_15ms_linear_envelope"
+    },
+    "pitch_discrimination": {
+      "file_count": 101,
+      "first_file": "1.flac",
+      "last_file": "101.flac",
+      "max_peak_fraction_full_scale": 0.900054931640625,
+      "max_peak_pcm16": 29493,
+      "pcm_lineage_verification": "plateau_pcm_identical_to_parent",
+      "task_sha256": "4e9f67110108717d0f0df438da424e9e5e4c179c8b584812b5a385134fbcb3b4",
+      "transformation": "replace_50ms_linear_envelope_with_15ms"
+    },
+    "risetime_discrimination": {
+      "file_count": 101,
+      "first_file": "1.flac",
+      "last_file": "101.flac",
+      "max_peak_fraction_full_scale": 0.899993896484375,
+      "max_peak_pcm16": 29491,
+      "pcm_lineage_verification": "full_pcm_identical_to_parent",
+      "task_sha256": "6e451686bc03e951ab1a21cd685355810be0418832aa7d33ba2d34fb0b53eda7",
+      "transformation": "identity_pcm_reencode"
+    }
+  },
+  "validation_status": "passed"
+}
