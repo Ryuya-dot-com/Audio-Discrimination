@@ -1,0 +1,60 @@
+name: Build release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_config_json:
+        description: Public production deployment-config.json (JSON; do not include secrets)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Deterministic runtime artifact only
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the selected commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run release-builder tests
+        run: python -B tools/test_build_release_artifact.py
+
+      - name: Build deterministic production artifact
+        shell: bash
+        env:
+          DEPLOYMENT_CONFIG_JSON: ${{ inputs.deployment_config_json }}
+        run: |
+          set -euo pipefail
+          CONFIG_PATH="$RUNNER_TEMP/deployment-config.json"
+          OUTPUT_PATH="$RUNNER_TEMP/audio-discrimination-${GITHUB_SHA}.zip"
+          printf '%s' "$DEPLOYMENT_CONFIG_JSON" > "$CONFIG_PATH"
+          export SOURCE_DATE_EPOCH
+          SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$GITHUB_SHA")"
+          python -B tools/build_release_artifact.py \
+            --source-root . \
+            --source-commit "$GITHUB_SHA" \
+            --deployment-config "$CONFIG_PATH" \
+            --output "$OUTPUT_PATH"
+          printf 'artifact_path=%s\n' "$OUTPUT_PATH" >> "$GITHUB_ENV"
+
+      - name: Upload release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-discrimination-${{ github.sha }}
+          path: ${{ env.artifact_path }}
+          if-no-files-found: error
+          retention-days: 14
+
+      # Deliberately no deployment step. Promotion is a separate, audited action.

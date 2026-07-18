@@ -40,9 +40,17 @@
     return text;
   }
 
+  function csvEscapeCell(value) {
+    if (value === undefined || value === null) return '';
+    const text = typeof value === 'string' ? csvSafeString(value) : String(value);
+    if (/[",\r\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+    return text;
+  }
+
   const api = Object.freeze({
     checkpointDeleteAllowed,
     checkpointWriteAllowed,
+    csvEscapeCell,
     csvSafeString,
     deletionBarrierBlocks
   });

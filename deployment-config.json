@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "deployment_id": "github-pages-preview",
+  "environment": "preview",
+  "research_session_enabled": false,
+  "researcher_ui_enabled": true,
+  "researcher_origin": "https://ryuya-dot-com.github.io",
+  "participant_origin": "https://ryuya-dot-com.github.io",
+  "public_participant_base_url": "https://ryuya-dot-com.github.io/Audio-Discrimination/",
+  "allowed_return_url_origins": [
+    "https://example.com"
+  ],
+  "local_test_sessions_enabled": true
+}

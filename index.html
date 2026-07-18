@@ -504,6 +504,17 @@
 
     .wide-preview p:last-child { margin-bottom: 0; }
 
+    .deployment-banner {
+      margin: 0 0 16px;
+      padding: 12px 16px;
+      border: 2px solid #b42318;
+      border-radius: 6px;
+      background: #fff1f0;
+      color: #7a271a;
+      font-weight: 700;
+      text-align: center;
+    }
+
     [hidden] { display: none !important; }
 
     @media (max-width: 760px) {
@@ -544,6 +555,14 @@
   </header>
 
   <main id="app">
+    <p id="deploymentBanner" class="deployment-banner" role="status" aria-live="polite" hidden></p>
+
+    <section id="deploymentBlocked" class="card" tabindex="-1" aria-labelledby="deploymentBlockedTitle">
+      <div class="tag" data-i18n="deployment.blocked.tag">Deployment unavailable</div>
+      <h1 id="deploymentBlockedTitle" data-i18n="deployment.blocked.title">This deployment cannot run a session</h1>
+      <p id="deploymentBlockedMessage" data-i18n="deployment.blocked.message">The frozen deployment configuration is missing, invalid, or does not authorize this origin. Stop here and contact the study administrator.</p>
+    </section>
+
     <section id="invalidLink" class="card" tabindex="-1" aria-labelledby="invalidLinkTitle">
       <div class="tag" data-i18n="invalidLink.tag">Study link</div>
       <h1 id="invalidLinkTitle" data-i18n="invalidLink.title">This study link cannot be used</h1>
@@ -592,7 +611,7 @@
               <label for="expectedMinutes" data-i18n="studyDetails.minutes.label">Expected duration (minutes)</label>
               <input id="expectedMinutes" type="number" required min="1" max="240" step="1" value="30">
             </div>
-            <p class="status full-width" data-i18n="studyDetails.publicUrlHelp">These URLs are embedded in the reusable participant link. Use public study pages only; never include credentials, access tokens, or participant-specific secrets.</p>
+            <p class="status full-width" data-i18n="studyDetails.publicUrlHelp">These URLs are included in local TEST links and are reserved for a future signed remote-link flow. Use public study pages only; never include credentials, access tokens, or participant-specific secrets.</p>
             <div>
               <label for="consentUrl" data-i18n="studyDetails.consentUrl.label">Consent information URL (HTTPS)</label>
               <input id="consentUrl" type="url" required maxlength="1024" placeholder="https://…">
@@ -604,7 +623,7 @@
             <div class="full-width">
               <label for="returnUrl" data-i18n="studyDetails.returnUrl.label">Remote result-return portal (HTTPS)</label>
               <input id="returnUrl" type="url" maxlength="1024" placeholder="https://…" aria-describedby="returnUrlHelp">
-              <p id="returnUrlHelp" class="status" data-i18n="studyDetails.returnUrl.help">Required only when creating a remote participant link. The portal must be approved for study data and provide its own upload receipt.</p>
+              <p id="returnUrlHelp" class="status" data-i18n="studyDetails.returnUrl.help">Required when testing the remote-return flow. Production remote links remain disabled; a future approved portal must provide its own upload receipt.</p>
             </div>
           </div>
         </fieldset>
@@ -652,9 +671,9 @@
         </div>
 
         <div class="setting-card full-width">
-          <h2 data-i18n="participantLink.title">Remote participant link</h2>
-          <p data-i18n="participantLink.intro">Create a reusable remote link that fixes the study metadata, procedure, stimuli, tasks, feedback, return portal, and starting language. It contains no participant code or results.</p>
-          <p class="status" data-i18n="participantLink.limitations">Anyone with the link can start a session. It is not proof of identity, a one-time invitation, or a blinding mechanism: the URL carries named study settings, and the researcher-results control is not access-protected. Results remain in the browser that runs the session, so define a supervised or otherwise approved return workflow before remote use.</p>
+          <h2 data-i18n="participantLink.title">Participant link (local TEST only)</h2>
+          <p data-i18n="participantLink.intro">Create a local TEST link that fixes the study metadata, procedure, stimuli, tasks, feedback, return portal, and starting language. Production remote-link issuance is disabled until an authenticated issuer and signature verification are integrated.</p>
+          <p class="status" data-i18n="participantLink.limitations">Local TEST links are reusable and unsigned. They are not proof of identity, a one-time invitation, or a blinding mechanism, and must never be distributed for research data collection.</p>
           <div>
             <label for="participantLinkLanguage" data-i18n="participantLink.startLanguage.label">Participant starting language</label>
             <select id="participantLinkLanguage">
@@ -761,6 +780,14 @@
       <h1 id="resumeTitle" data-i18n="resume.title">Resume your saved session?</h1>
       <p id="resumeDescription"></p>
       <p class="status" data-i18n="resume.help">Resume only if this is your session. Starting over deletes its local response data and participant code; a non-identifying deletion time remains to stop another open tab from recreating it.</p>
+      <div class="stack">
+        <div>
+          <label for="resumeParticipantCode" data-i18n="resume.code.label">Re-enter the participant code</label>
+          <input id="resumeParticipantCode" type="text" required autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" maxlength="32" pattern="[A-Za-z][A-Za-z0-9_-]{0,31}" data-i18n-placeholder="resume.code.placeholder" aria-describedby="resumeCodeHelp resumeCodeError">
+          <p id="resumeCodeHelp" class="status" data-i18n="resume.code.help">Enter the pseudonymous code supplied for this saved session. The page does not display the stored code.</p>
+          <p id="resumeCodeError" class="error-message" role="alert" aria-live="assertive"></p>
+        </div>
+      </div>
       <div class="button-row">
         <button id="resumeSavedSession" type="button" data-i18n="resume.resume">Resume saved session</button>
         <button id="discardSavedSession" type="button" class="secondary" data-i18n="resume.discard">Delete it and start over</button>
@@ -938,6 +965,7 @@
     </section>
   </main>
 
+  <script src="deployment_policy.js"></script>
   <script src="session_safety.js"></script>
   <script src="result_bundle.js"></script>
   <script src="script.js"></script>
