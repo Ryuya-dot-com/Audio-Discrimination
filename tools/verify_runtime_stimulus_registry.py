@@ -37,11 +37,11 @@ EXPECTED_TASKS = {
     "sun2021": ("pitch", "formant", "duration", "risetime"),
 }
 EXPECTED_IMPLEMENTATION_VERSIONS = {
-    "batteryVersion": "5.2.0",
-    "trialSchemaVersion": 10,
-    "wideSchemaVersion": 8,
-    "checkpointSchemaVersion": 2,
-    "resultBundleSchemaVersion": 2,
+    "batteryVersion": "5.3.0",
+    "trialSchemaVersion": 11,
+    "wideSchemaVersion": 9,
+    "checkpointSchemaVersion": 3,
+    "resultBundleSchemaVersion": 3,
 }
 LEGACY_SET_ID = "saito-tierney-offline-osf-6p8hv-e8ebb0a5"
 KNOWN_TASKS = ("pitch", "formant", "duration", "risetime")

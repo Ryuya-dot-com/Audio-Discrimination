@@ -57,8 +57,10 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check script.js
+          node --check deployment_policy.js
           node --check result_bundle.js
           node --check session_safety.js
+          node --check tools/test_deployment_policy.js
           node --check tools/test_result_bundle.js
           node --check tools/test_session_safety.js
           node --check pitch_discrimination/pitch_discrimination.js
@@ -74,9 +76,13 @@ jobs:
       - name: Verify UI and result-bundle contracts
         run: |
           python tools/verify_ui_contract.py
+          python tools/verify_legacy_entrypoints_disabled.py
+          python -B tools/verify_result_schema_contract.py
+          node tools/test_deployment_policy.js
           node tools/test_result_bundle.js
           node tools/test_session_safety.js
-          python tools/test_validate_result_bundle.py
+          python -B tools/test_build_release_artifact.py
+          python -B tools/test_validate_result_bundle.py
 
       - name: Install acoustic-audit dependencies
         run: python -m pip install numpy==2.4.2 soundfile==0.13.1

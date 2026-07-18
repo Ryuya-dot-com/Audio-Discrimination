@@ -7,25 +7,32 @@ approved study protocol matches the deployed build.
 
 - [ ] CI passes on the exact release commit; no check is waived without a recorded rationale.
 - [ ] The candidate is tested on staging before production, using the same hosting and asset paths.
-- [ ] The implementation contract is `battery 5.2.0`, `trial schema 10`, `wide schema 8`, `checkpoint schema 2`, `result-bundle schema 2`; participant-link, protocol, and stimulus-set versions are also updated when their contracts change.
-- [ ] The deployed app calculates the same non-empty asset-set SHA-256 for `index.html`, `result_bundle.js`, `session_safety.js`, and `script.js` and the same served-`script.js` SHA-256 on two clean loads; both are recorded in exported data and match the release record.
-- [ ] Production uses a dedicated HTTPS origin. Shared `*.github.io`, localhost, and `file://` are preview/test environments only and are confirmed to block research-session entry.
+- [ ] The implementation contract is `battery 5.3.0`, `trial schema 11`, `wide schema 9`, `checkpoint schema 3`, `participant-link schema 3`, `result-bundle schema 3`; protocol and stimulus-set versions are also updated when their contracts change.
+- [ ] The exact non-secret `deployment-config.json` is approved and archived. Its deployment ID/environment, researcher and participant origins, public participant base URL, researcher-UI setting, return-origin allowlist, and local-test setting match the release record; it contains no credentials, tokens, participant identifiers, or secrets.
+- [ ] The deployed app calculates the same non-empty asset-set SHA-256 for `deployment-config.json`, `deployment_policy.js`, `index.html`, `result_bundle.js`, `session_safety.js`, and `script.js` and the same served-`script.js` and deployment-config SHA-256 values on two clean loads; all are recorded in exported data and match the release record.
+- [ ] Production/staging research sessions run only on the exact HTTPS origins frozen in the deployment configuration. Shared `*.github.io`, arbitrary HTTPS copies, and `file://` are confirmed to block research-session entry; loopback can create only visibly labelled `test` sessions.
+- [ ] A loopback UAT export uses the `TEST_ONLY_` filename prefix and records `session_type=test` plus `test_data_do_not_analyze` consistently in checkpoint, both CSV representations, and manifest. The research-ingestion workflow rejects or segregates it.
+- [ ] The production participant origin does not expose researcher setup unless explicitly required: `researcher_ui_enabled` and the exact researcher origin are verified independently from participant-link execution.
+- [ ] Every configured remote return URL has an exact origin in `allowed_return_url_origins`; lookalike subdomains, credentials, HTTP, and unlisted ports are rejected.
 - [ ] Production deployment is approved separately from merging. A source-branch push cannot update production without a distinct approval; rollback to the previous tagged build has been rehearsed.
-- [ ] The release is tagged, the dedicated production URL is archived, and the exact fully generated participant link—not only the base URL—is reviewed, UAT-tested, and archived for every distribution ID.
+- [ ] The release is tagged and the dedicated production URL is archived. If a future signed-link implementation enables remote collection, the exact fully generated participant link—not only the base URL—is reviewed, UAT-tested, and archived for every distribution ID.
 
 ## Study mode, consent, and result return
 
 - [ ] Exactly one operating mode is declared: **supervised** (same browser/device, researcher exports locally) or **remote manual return** (participant saves the ZIP and uses an approved external authenticated portal).
 - [ ] For remote use, the pre-consent information states the complete ZIP → portal upload → receipt retention → browser-clear sequence, and support instructions cover failure at every step.
 - [ ] End-to-end submission, duplicate handling, failure recovery, researcher receipt reconciliation, and the participant's explicit post-receipt clear action are tested. A participant launch link alone is not a return channel, and the app's receipt confirmation is a participant assertion rather than server verification.
+- [ ] Remote production links are authorized by an authenticated issuer and cryptographically bind the approved configuration, expiry, invitation/distribution ID, and all external URLs. No browser-delivered signing secret is used. Until this exists, remote links are test-only; a supervised-only study documents that remote return is disabled.
+- [ ] The researcher configuration origin is protected by the approved SSO/MFA policy and is operationally separate from the public participant origin.
 - [ ] Ethics approval, study identity, researcher contact, estimated duration, eligibility, withdrawal procedure, data handling, and consent text/version are shown or linked before participation.
 - [ ] Participant-facing completion text states whether data were sent, saved locally, or still require action, and gives a receipt/reference when applicable.
-- [ ] The study team accepts or mitigates the static-site limitations: links are reusable and unsigned; participant/researcher identity is not authenticated; another otherwise valid configuration cannot be detected as a forgery; task/configuration IDs are not blinded; and no automatic upload occurs.
+- [ ] The current release is verified to reject unsigned production/staging participant-link issuance and execution. A future signed-link implementation receives a new schema/security review; authenticated researcher access, participant identity policy, blinding, and result return are assessed separately.
 
 ## Persistence, recovery, and data integrity
 
 - [ ] Trial state is persisted after each committed response and before playback; repeated row metadata is normalized in the checkpoint and correctly reconstructed in trial/wide exports after resume.
-- [ ] Resume is rejected when the frozen application-asset-set SHA, served-script SHA, study configuration, stimulus binding, or checkpoint structure differs.
+- [ ] The browser-local checkpoint retention window and expired-record cleanup are fixed in the approved data-management procedure; the resume prompt hides the stored participant code and requires code re-entry.
+- [ ] Resume is rejected when session type, deployment ID/environment/origin/config SHA, frozen application-asset-set SHA, served-script SHA, study configuration, stimulus binding, or checkpoint structure differs.
 - [ ] Resume, restart, withdraw, equal-revision foreign-owner conflicts, visibility interruption, audio abort/retry, and unrecoverable-error paths cannot silently duplicate trials, mix participants, continue background playback, or overwrite an unexported session.
 - [ ] Closing, reloading, clearing data, and starting the next participant warn about unsent or unexported results.
 - [ ] Stop, discard, next-participant, and remote post-receipt clearing verify checkpoint removal and the deletion barrier. A forced deletion-write failure never displays a deletion-success screen, and another open tab cannot recreate the deleted run.

@@ -7,6 +7,7 @@ static check, not a general-purpose JavaScript parser.
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from collections import Counter
@@ -20,6 +21,7 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 HTML_PATH = ROOT / "index.html"
 SCRIPT_PATH = ROOT / "script.js"
+DEPLOYMENT_CONFIG_PATH = ROOT / "deployment-config.json"
 
 I18N_ATTRIBUTES = (
     "data-i18n",
@@ -662,6 +664,9 @@ def check_participant_link(tokens: Sequence[JSToken]) -> CheckResult:
 
 def check_script_order(parser: ContractHTMLParser) -> CheckResult:
     basenames = [Path(urlsplit(source).path).name for source in parser.script_sources]
+    policy_positions = [
+        index for index, name in enumerate(basenames) if name == "deployment_policy.js"
+    ]
     result_positions = [
         index for index, name in enumerate(basenames) if name == "result_bundle.js"
     ]
@@ -672,6 +677,10 @@ def check_script_order(parser: ContractHTMLParser) -> CheckResult:
         index for index, name in enumerate(basenames) if name == "script.js"
     ]
     problems: list[str] = []
+    if len(policy_positions) != 1:
+        problems.append(
+            f"expected one deployment_policy.js script tag, found {len(policy_positions)}"
+        )
     if len(result_positions) != 1:
         problems.append(
             f"expected one result_bundle.js script tag, found {len(result_positions)}"
@@ -682,6 +691,12 @@ def check_script_order(parser: ContractHTMLParser) -> CheckResult:
         )
     if len(script_positions) != 1:
         problems.append(f"expected one script.js script tag, found {len(script_positions)}")
+    if (
+        len(policy_positions) == 1
+        and len(script_positions) == 1
+        and policy_positions[0] >= script_positions[0]
+    ):
+        problems.append("deployment_policy.js must appear before script.js")
     if (
         len(result_positions) == 1
         and len(script_positions) == 1
@@ -698,9 +713,93 @@ def check_script_order(parser: ContractHTMLParser) -> CheckResult:
         "script tag order",
         not problems,
         (
-            "session_safety.js and result_bundle.js appear once before script.js"
+            "deployment_policy.js, session_safety.js, and result_bundle.js appear once before script.js"
             if not problems
             else f"{len(problems)} script tag order problem(s)"
+        ),
+        problems,
+    )
+
+
+def check_deployment_contract(tokens: Sequence[JSToken]) -> CheckResult:
+    expected_assets = {
+        "deployment-config.json",
+        "deployment_policy.js",
+        "index.html",
+        "result_bundle.js",
+        "session_safety.js",
+        "script.js",
+    }
+    assets: list[str] = []
+    for index in range(len(tokens) - 3):
+        if (
+            tokens[index].value == "const"
+            and tokens[index + 1].value == "APP_BUILD_ASSETS"
+            and tokens[index + 2].value == "="
+        ):
+            array_open = next(
+                (
+                    position
+                    for position in range(index + 3, min(index + 40, len(tokens)))
+                    if tokens[position].value in {"[", ";"}
+                ),
+                None,
+            )
+            if array_open is None or tokens[array_open].value != "[":
+                raise StaticParseError("APP_BUILD_ASSETS is not initialized from an array")
+            array_close = matching_token(tokens, array_open)
+            assets = [
+                token.value
+                for token in tokens[array_open + 1 : array_close]
+                if token.kind == "string"
+            ]
+            if any(token.value == "DEPLOYMENT_CONFIG_FILE" for token in tokens[array_open + 1 : array_close]):
+                assets.append("deployment-config.json")
+            break
+    if not assets:
+        raise StaticParseError("could not find APP_BUILD_ASSETS")
+
+    problems: list[str] = []
+    if set(assets) != expected_assets or len(assets) != len(expected_assets):
+        problems.append(
+            "APP_BUILD_ASSETS must contain each frozen deployment/application asset exactly once"
+        )
+    try:
+        raw_config = json.loads(DEPLOYMENT_CONFIG_PATH.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        problems.append(f"deployment-config.json is not readable canonical JSON: {error}")
+        raw_config = {}
+    required_config_keys = {
+        "schema_version",
+        "deployment_id",
+        "environment",
+        "research_session_enabled",
+        "researcher_ui_enabled",
+        "researcher_origin",
+        "participant_origin",
+        "public_participant_base_url",
+        "allowed_return_url_origins",
+        "local_test_sessions_enabled",
+    }
+    if set(raw_config) != required_config_keys:
+        problems.append("deployment-config.json keys do not match schema 1")
+    if raw_config.get("schema_version") != 1:
+        problems.append("deployment-config.json schema_version must be 1")
+    issuance_gate_mentions = sum(
+        token.kind == "identifier" and token.value == "participantLinkIssuanceAllowed"
+        for token in tokens
+    )
+    if issuance_gate_mentions < 2:
+        problems.append(
+            "script.js must use participantLinkIssuanceAllowed for both UI state and link construction"
+        )
+    return CheckResult(
+        "deployment contract",
+        not problems,
+        (
+            "deployment config, remote-link issuance gate, and all six frozen build assets are bound to the UI"
+            if not problems
+            else f"{len(problems)} deployment contract problem(s)"
         ),
         problems,
     )
@@ -773,6 +872,7 @@ def main() -> int:
             "participant-link parameters", lambda: check_participant_link(tokens)
         ),
         run_check("script tag order", lambda: check_script_order(parser)),
+        run_check("deployment contract", lambda: check_deployment_contract(tokens)),
         run_check("default language", lambda: check_default_language(parser)),
     ]
 

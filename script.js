@@ -62,12 +62,12 @@ const BASE_CONFIG = {
 };
 
 const IMPLEMENTATION = Object.freeze({
-  batteryVersion: '5.2.0',
-  trialSchemaVersion: 10,
-  wideSchemaVersion: 8,
-  checkpointSchemaVersion: 2,
-  resultBundleSchemaVersion: 2,
-  appBuildId: 'audio-discrimination-5.2.0',
+  batteryVersion: '5.3.0',
+  trialSchemaVersion: 11,
+  wideSchemaVersion: 9,
+  checkpointSchemaVersion: 3,
+  resultBundleSchemaVersion: 3,
+  appBuildId: 'audio-discrimination-5.3.0',
   procedureScope: 'study_profile_binds_adaptive_procedure_scoring_and_stimulus_set',
   taskOrderMethod: 'subject_id_seeded_shuffle',
   reversalDefinition: 'intended_nonzero_staircase_direction_change',
@@ -76,12 +76,15 @@ const IMPLEMENTATION = Object.freeze({
 
 const PARTICIPANT_LINK = Object.freeze({
   mode: 'participant',
-  schemaVersion: '2',
+  schemaVersion: '3',
   feedbackModes: Object.freeze(['practice_only', 'detailed']),
   parameterNames: Object.freeze([
     'mode',
     'link_version',
     'battery_version',
+    'deployment_id',
+    'deployment_config_sha256',
+    'session_type',
     'protocol',
     'protocol_version',
     'catalog_sha256',
@@ -108,11 +111,19 @@ const PARTICIPANT_CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,31}$/;
 const STUDY_CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 const VERSION_CODE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 const SUPPORTED_LANGUAGES = Object.freeze(['en', 'ja']);
-const CHECKPOINT_KEY_PREFIX = 'audio-discrimination-checkpoint-v1:';
+const CHECKPOINT_KEY_PREFIX = 'audio-discrimination-checkpoint-v2:';
 const MAX_STUDY_URL_LENGTH = 1024;
 const MAX_PARTICIPANT_LINK_LENGTH = 4096;
 const DISPLAY_CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/;
-const APP_BUILD_ASSETS = Object.freeze(['index.html', 'result_bundle.js', 'session_safety.js', 'script.js']);
+const DEPLOYMENT_CONFIG_FILE = 'deployment-config.json';
+const APP_BUILD_ASSETS = Object.freeze([
+  DEPLOYMENT_CONFIG_FILE,
+  'deployment_policy.js',
+  'index.html',
+  'result_bundle.js',
+  'session_safety.js',
+  'script.js'
+]);
 
 const STIMULUS_CATALOG = Object.freeze({
   schemaVersion: 1,
@@ -409,16 +420,16 @@ const I18N = {
     'studyDetails.consentVersion.label': 'Consent version',
     'studyDetails.consentVersion.placeholder': 'e.g., 2026-01',
     'studyDetails.minutes.label': 'Expected duration (minutes)',
-    'studyDetails.publicUrlHelp': 'These URLs are embedded in the reusable participant link. Use public study pages only; never include credentials, access tokens, or participant-specific secrets.',
+    'studyDetails.publicUrlHelp': 'These URLs are included in local TEST links and are reserved for a future signed remote-link flow. Use public study pages only; never include credentials, access tokens, or participant-specific secrets.',
     'studyDetails.consentUrl.label': 'Consent information URL (HTTPS)',
     'studyDetails.contactUrl.label': 'Researcher contact URL (HTTPS)',
     'studyDetails.returnUrl.label': 'Remote result-return portal (HTTPS)',
-    'studyDetails.returnUrl.help': 'Required only when creating a remote participant link. The portal must be approved for study data and provide its own upload receipt.',
+    'studyDetails.returnUrl.help': 'Required when testing the remote-return flow. Production remote links remain disabled; a future approved portal must provide its own upload receipt.',
     'studyDetails.invalid': 'Complete every study detail with the required format. Use HTTPS links and do not include usernames or passwords in URLs.',
     'studyDetails.returnRequired': 'Add an approved HTTPS result-return portal before creating a remote participant link.',
-    'participantLink.title': 'Remote participant link',
-    'participantLink.intro': 'Create a reusable remote link that fixes the study metadata, procedure, stimuli, tasks, feedback, return portal, and starting language. It contains no participant code or results.',
-    'participantLink.limitations': 'Anyone can construct or alter a valid-looking link: it is not signed, identity proof, a one-time invitation, or a blinding mechanism. Use an approved authenticated distribution channel, do not use this static build for blinded conditions, and verify the site/distribution IDs. The app does not upload results; participants must return the ZIP through the approved portal and retain its receipt.',
+    'participantLink.title': 'Participant link (local TEST only)',
+    'participantLink.intro': 'Create a local TEST link that fixes the study metadata, procedure, stimuli, tasks, feedback, return portal, and starting language. Production remote-link issuance is disabled until an authenticated issuer and signature verification are integrated.',
+    'participantLink.limitations': 'Local TEST links are reusable and unsigned. They are not proof of identity, a one-time invitation, or a blinding mechanism, and must never be distributed for research data collection.',
     'participantLink.startLanguage.label': 'Participant starting language',
     'participantLink.language.en': 'English',
     'participantLink.language.ja': 'Japanese',
@@ -428,11 +439,20 @@ const I18N = {
     'participantLink.open': 'Open participant view',
     'participantLink.created': 'Participant link created. Starting language: {language}. Check the settings before sharing it.',
     'participantLink.localPreview': 'Local preview link created. Starting language: {language}. Do not distribute this link; create the study link from the deployed HTTPS app.',
-    'participantLink.unshareable': 'Open the deployed app over HTTPS before creating a participant link. A local file:// link cannot be shared.',
+    'participantLink.unshareable': 'This build creates participant links only for visibly labelled local TEST sessions. Production remote links remain disabled until signed-link verification is integrated.',
     'participantLink.copied': 'Participant link copied.',
     'participantLink.copyFailed': 'The link could not be copied automatically. Select and copy it from the field.',
     'participantLink.openFailed': 'The participant view could not be opened. Copy the link and open it in a new tab.',
     'participantLink.loaded': 'Study settings were loaded from the participant link. Research settings cannot be changed on this page.',
+    'deployment.testBanner': 'TEST SESSION — LOCAL TEST DATA — DO NOT COMBINE WITH RESEARCH DATA',
+    'deployment.stagingBanner': 'STAGING DEPLOYMENT — verify the deployment environment before use',
+    'deployment.blocked.tag': 'Deployment unavailable',
+    'deployment.blocked.title': 'This deployment cannot run a session',
+    'deployment.blocked.message': 'The frozen deployment configuration is missing, invalid, or does not authorize this origin. Stop here and contact the study administrator.',
+    'deployment.previewOnly': 'This deployment is preview-only. Research sessions and participant-link creation are disabled.',
+    'deployment.originBlocked': 'This origin is not authorized by the frozen deployment configuration.',
+    'deployment.returnOriginBlocked': 'The result-return portal origin is not on this deployment’s approved allowlist.',
+    'deployment.testLinkCreated': 'Local TEST link created. It produces test-only output and must not be distributed as a research link.',
     'invalidLink.tag': 'Invalid study link',
     'invalidLink.title': 'This study link cannot be used',
     'invalidLink.message': 'The link is incomplete, altered, or for a different battery version. Stop here and ask the researcher for a new link.',
@@ -471,7 +491,11 @@ const I18N = {
     'resume.tag': 'Saved session found',
     'resume.title': 'Resume your saved session?',
     'resume.help': 'Resume only if this is your session. Starting over deletes its local response data and participant code; a non-identifying deletion time remains to stop another open tab from recreating it.',
-    'resume.description': 'Participant code {id}; saved {saved}; status {status}.',
+    'resume.description': 'Saved {saved}; status {status}.',
+    'resume.code.label': 'Re-enter the participant code',
+    'resume.code.placeholder': 'e.g., P001',
+    'resume.code.help': 'Enter the pseudonymous code supplied for this saved session. The page does not display the stored code.',
+    'resume.code.error': 'The code does not match this saved session.',
     'resume.incompatible': 'A saved session from a different study configuration is present in this browser. It cannot be resumed with this link. Delete it only if the approved retention procedure allows that action.',
     'resume.resume': 'Resume saved session',
     'resume.discard': 'Delete it and start over',
@@ -698,16 +722,16 @@ const I18N = {
     'studyDetails.consentVersion.label': '同意文書版',
     'studyDetails.consentVersion.placeholder': '例：2026-01',
     'studyDetails.minutes.label': '所要時間の目安（分）',
-    'studyDetails.publicUrlHelp': 'これらのURLは再利用可能な参加者用リンクに埋め込まれます。公開用の研究ページだけを使用し、認証情報、アクセストークン、参加者固有の秘密値を含めないでください。',
+    'studyDetails.publicUrlHelp': 'これらのURLはローカルTEST用リンクに含まれ、将来の署名付き遠隔リンクでも使用する予定です。公開用の研究ページだけを使用し、認証情報、アクセストークン、参加者固有の秘密値を含めないでください。',
     'studyDetails.consentUrl.label': '同意説明URL（HTTPS）',
     'studyDetails.contactUrl.label': '研究者連絡先URL（HTTPS）',
     'studyDetails.returnUrl.label': '遠隔結果返却ポータル（HTTPS）',
-    'studyDetails.returnUrl.help': '遠隔参加者用リンク作成時のみ必須です。研究データ用に承認され、アップロード受領証を出せるポータルを指定してください。',
+    'studyDetails.returnUrl.help': '遠隔返却フローのTEST時に必須です。本番の遠隔リンクは無効であり、将来使用する承認済みポータルは独自のアップロード受領証を発行する必要があります。',
     'studyDetails.invalid': '研究情報を指定形式ですべて入力してください。URLはHTTPSとし、ユーザー名やパスワードを含めないでください。',
     'studyDetails.returnRequired': '遠隔参加者用リンクを作成する前に、承認済みのHTTPS結果返却ポータルを指定してください。',
-    'participantLink.title': '遠隔参加者用リンク',
-    'participantLink.intro': '研究情報、手続き、刺激、課題、フィードバック、結果返却先、開始言語を固定した再利用可能なリンクを作成します。参加者コードや結果は含みません。',
-    'participantLink.limitations': '誰でも形式上有効なリンクを作成・変更できます。署名、本人確認、一回限りの招待、盲検化にはなりません。承認済みの認証付き配布経路を使い、静的版を盲検条件には使用せず、実施サイトIDと配布IDを照合してください。このアプリは自動送信せず、参加者がZIPを承認済みポータルへ返却して受領証を保管します。',
+    'participantLink.title': '参加者用リンク（ローカルTEST専用）',
+    'participantLink.intro': '研究情報、手続き、刺激、課題、フィードバック、結果返却先、開始言語を固定したローカルTEST用リンクを作成します。認証済み発行者と署名検証を統合するまで、本番の遠隔リンク発行は無効です。',
+    'participantLink.limitations': 'ローカルTEST用リンクは再利用可能で未署名です。本人確認、一回限りの招待、盲検化にはならず、研究データ収集には決して配布しないでください。',
     'participantLink.startLanguage.label': '参加者画面の開始言語',
     'participantLink.language.en': '英語',
     'participantLink.language.ja': '日本語',
@@ -717,11 +741,20 @@ const I18N = {
     'participantLink.open': '参加者画面を開く',
     'participantLink.created': '参加者用リンクを作成しました。開始言語：{language}。共有前に設定内容を確認してください。',
     'participantLink.localPreview': 'ローカル検証用リンクを作成しました。開始言語：{language}。このリンクは配布せず、公開済みHTTPSアプリから研究用リンクを作成してください。',
-    'participantLink.unshareable': '参加者用リンクは、公開済みアプリをHTTPSで開いてから作成してください。ローカルのfile://リンクは共有できません。',
+    'participantLink.unshareable': 'このビルドで作成できるのは、明示的に表示されたローカルTESTセッションのリンクだけです。署名付きリンク検証を統合するまで、本番の遠隔リンクは無効です。',
     'participantLink.copied': '参加者用リンクをコピーしました。',
     'participantLink.copyFailed': 'リンクを自動でコピーできませんでした。入力欄から選択してコピーしてください。',
     'participantLink.openFailed': '参加者画面を開けませんでした。リンクをコピーして新しいタブで開いてください。',
     'participantLink.loaded': '参加者用リンクから実施設定を読み込みました。このページでは研究設定を変更できません。',
+    'deployment.testBanner': 'テストセッション — ローカル検証データ — 研究データと混在禁止',
+    'deployment.stagingBanner': 'ステージング環境 — 使用前に配備環境を確認してください',
+    'deployment.blocked.tag': '配備を利用できません',
+    'deployment.blocked.title': 'この配備ではセッションを実行できません',
+    'deployment.blocked.message': '固定された配備設定が欠損、不正、または現在のoriginを許可していません。ここで停止し、研究管理者へ連絡してください。',
+    'deployment.previewOnly': 'この配備はプレビュー専用です。研究セッションと参加者用リンク作成は無効です。',
+    'deployment.originBlocked': '現在のoriginは固定された配備設定で許可されていません。',
+    'deployment.returnOriginBlocked': '結果返却ポータルのoriginが、この配備の承認済みallowlistに含まれていません。',
+    'deployment.testLinkCreated': 'ローカルのテスト用リンクを作成しました。テスト専用出力となるため、研究用リンクとして配布しないでください。',
     'invalidLink.tag': '無効な研究リンク',
     'invalidLink.title': 'この研究リンクは使用できません',
     'invalidLink.message': 'リンクが不完全、変更済み、または別のバッテリー版用です。ここで停止し、研究者に新しいリンクを依頼してください。',
@@ -760,7 +793,11 @@ const I18N = {
     'resume.tag': '保存済みセッション',
     'resume.title': '保存済みセッションを再開しますか？',
     'resume.help': '自分のセッションである場合だけ再開してください。最初からやり直すとローカル回答データと参加者コードを削除し、別タブによる再作成防止用の個人を識別しない削除時刻だけを残します。',
-    'resume.description': '参加者コード {id}／保存日時 {saved}／状態 {status}',
+    'resume.description': '保存日時 {saved}／状態 {status}',
+    'resume.code.label': '参加者コードを再入力',
+    'resume.code.placeholder': '例：P001',
+    'resume.code.help': 'この保存済みセッションに割り当てられた仮名コードを入力してください。保存されているコードは画面に表示しません。',
+    'resume.code.error': '入力したコードは、この保存済みセッションと一致しません。',
     'resume.incompatible': 'このブラウザには、別の研究設定の保存済みセッションがあります。このリンクでは再開できません。承認済みの保管手順で認められている場合だけ削除してください。',
     'resume.resume': '保存済みセッションを再開',
     'resume.discard': '削除して最初から開始',
@@ -980,6 +1017,34 @@ function applyStaticTranslations() {
   });
 }
 
+function renderDeploymentState() {
+  const context = deploymentContext;
+  if (elements.deploymentBanner) {
+    const bannerKey = context?.localTest
+      ? 'deployment.testBanner'
+      : deploymentConfig?.environment === 'staging'
+        ? 'deployment.stagingBanner'
+        : '';
+    elements.deploymentBanner.hidden = !bannerKey;
+    elements.deploymentBanner.textContent = bannerKey ? t(bannerKey) : '';
+  }
+  const warningKey = context?.deploymentPreviewOnly
+    ? 'deployment.previewOnly'
+    : 'deployment.originBlocked';
+  if (elements.deploymentOriginWarning) {
+    elements.deploymentOriginWarning.hidden = Boolean(context?.supervisedSessionAllowed);
+    elements.deploymentOriginWarning.textContent = t(warningKey);
+  }
+  if (elements.participantOriginWarning) {
+    elements.participantOriginWarning.hidden = Boolean(context?.participantSessionAllowed);
+    elements.participantOriginWarning.textContent = t(warningKey);
+  }
+  if (elements.lockSettings) elements.lockSettings.disabled = !context?.supervisedSessionAllowed;
+  if (elements.createParticipantLink) {
+    elements.createParticipantLink.disabled = !context?.participantLinkIssuanceAllowed;
+  }
+}
+
 function renderBuildInfo() {
   if (!elements.buildInfo) return;
   elements.buildInfo.textContent = t('researcherSetup.build', {
@@ -987,7 +1052,7 @@ function renderBuildInfo() {
     buildSha: appBuildSha256 || t('notAvailable'),
     scriptSha: appScriptSha256 || t('notAvailable')
   });
-  elements.deploymentOriginWarning.hidden = !usesSharedGitHubPagesOrigin();
+  renderDeploymentState();
 }
 
 function setLanguage(language, { preserveParticipantLink = false } = {}) {
@@ -995,6 +1060,7 @@ function setLanguage(language, { preserveParticipantLink = false } = {}) {
   currentLanguage = language;
   if (!preserveParticipantLink && configurationSource === 'researcher_ui') clearParticipantLink();
   applyStaticTranslations();
+  renderDeploymentState();
   renderBuildInfo();
   elements.langEn.setAttribute('aria-pressed', String(language === 'en'));
   elements.langJa.setAttribute('aria-pressed', String(language === 'ja'));
@@ -1061,6 +1127,9 @@ function setLanguage(language, { preserveParticipantLink = false } = {}) {
 }
 
 const elements = {
+  deploymentBlocked: document.getElementById('deploymentBlocked'),
+  deploymentBlockedMessage: document.getElementById('deploymentBlockedMessage'),
+  deploymentBanner: document.getElementById('deploymentBanner'),
   invalidLink: document.getElementById('invalidLink'),
   researcherSetup: document.getElementById('researcherSetup'),
   participantLanding: document.getElementById('participantLanding'),
@@ -1131,6 +1200,8 @@ const elements = {
   preflightError: document.getElementById('preflightError'),
   continueToCode: document.getElementById('continueToCode'),
   resumeDescription: document.getElementById('resumeDescription'),
+  resumeParticipantCode: document.getElementById('resumeParticipantCode'),
+  resumeCodeError: document.getElementById('resumeCodeError'),
   resumeSavedSession: document.getElementById('resumeSavedSession'),
   discardSavedSession: document.getElementById('discardSavedSession'),
   subjectId: document.getElementById('subjectId'),
@@ -1249,9 +1320,15 @@ let runGeneration = 0;
 let appScriptSha256 = '';
 let appBuildSha256 = '';
 let appAssetSha256 = Object.freeze({});
+let deploymentConfig = null;
+let deploymentContext = null;
+let deploymentConfigSha256 = '';
+let deploymentConfigError = '';
 let buildIdentityPromise = Promise.resolve(false);
 let sessionScriptSha256 = '';
 let sessionBuildSha256 = '';
+let sessionDeploymentConfigSha256 = '';
+let sessionType = '';
 let taskStartedAt = '';
 let taskCompletedAt = '';
 let consentConfirmedAt = '';
@@ -1309,8 +1386,16 @@ function readCheckpointDeletionBarrier() {
   }
 }
 
-function usesSharedGitHubPagesOrigin() {
-  return /(^|\.)github\.io$/i.test(window.location.hostname);
+function sessionAuthorizationAllowed(source = configurationSource) {
+  if (!deploymentConfig || !deploymentContext || !sessionType) return false;
+  if (source === 'participant_link') return deploymentContext.participantSessionAllowed;
+  return deploymentContext.supervisedSessionAllowed;
+}
+
+function assertSessionAuthorization(source = configurationSource) {
+  if (!sessionAuthorizationAllowed(source)) throw new Error('Deployment origin is not authorized.');
+  const expectedType = deploymentContext.localTest ? 'test' : 'research';
+  if (sessionType !== expectedType) throw new Error('Session type does not match deployment context.');
 }
 
 function normalizeHttpsUrl(value, { required = true } = {}) {
@@ -1345,6 +1430,12 @@ function validateStudyMetadata(metadata, { requireReturnUrl = false } = {}) {
     throw new Error('Invalid study metadata.');
   }
   const returnUrl = normalizeHttpsUrl(metadata.returnUrl, { required: requireReturnUrl });
+  if (returnUrl && (
+    !deploymentConfig || !globalThis.DeploymentPolicy ||
+    !DeploymentPolicy.returnUrlOriginAllowed(deploymentConfig, returnUrl)
+  )) {
+    throw new Error('Return URL origin is not allowed.');
+  }
   return Object.freeze({
     studyId: String(metadata.studyId).trim(),
     conditionId: String(metadata.conditionId).trim(),
@@ -1397,9 +1488,7 @@ function renderParticipantLanding() {
   elements.remotePortalPreview.hidden = !remote;
   elements.remoteExportCheck.hidden = !remote;
   elements.checkExport.disabled = !remote;
-  const sharedOrigin = usesSharedGitHubPagesOrigin();
-  elements.deploymentOriginWarning.hidden = !sharedOrigin;
-  elements.participantOriginWarning.hidden = !sharedOrigin;
+  renderDeploymentState();
 }
 
 function checkpointSettings() {
@@ -1409,6 +1498,9 @@ function checkpointSettings() {
     protocol_version: config.version,
     selected_task_ids: researcherSettings.selectedTaskIds.slice(),
     feedback_mode: researcherSettings.feedbackMode,
+    session_type: sessionType,
+    deployment_id: deploymentConfig?.deploymentId || '',
+    deployment_config_sha256: deploymentConfigSha256,
     catalog_sha256: STIMULUS_CATALOG.sha256,
     stimulus_set_id: stimulusSet.id,
     manifest_sha256: stimulusSet.manifestSha256
@@ -1457,6 +1549,11 @@ function checkpointSnapshot(phase = sessionPhase, presentation = activePresentat
   return {
     checkpoint_schema_version: IMPLEMENTATION.checkpointSchemaVersion,
     battery_version: IMPLEMENTATION.batteryVersion,
+    session_type: sessionType,
+    deployment_id: deploymentConfig?.deploymentId || '',
+    deployment_environment: deploymentConfig?.environment || '',
+    deployment_config_sha256: sessionDeploymentConfigSha256,
+    app_origin: window.location.origin,
     saved_at_utc: new Date().toISOString(),
     revision: checkpointRevision + 1,
     owner: checkpointOwner,
@@ -1842,6 +1939,7 @@ function warmUpTaskAudio() {
 
 function showSection(section) {
   [
+    elements.deploymentBlocked,
     elements.invalidLink,
     elements.researcherSetup,
     elements.participantLanding,
@@ -1861,7 +1959,9 @@ function showSection(section) {
   const target = elements[section];
   if (!target) throw new Error(`Unknown section: ${section}`);
   target.classList.add('active');
-  const terminalSections = new Set(['invalidLink', 'researcherSetup', 'withdrawn', 'returned', 'researcherResults']);
+  const terminalSections = new Set([
+    'deploymentBlocked', 'invalidLink', 'researcherSetup', 'withdrawn', 'returned', 'researcherResults'
+  ]);
   elements.sessionControls.hidden = terminalSections.has(section) || !settingsLocked;
   target.scrollIntoView({ block: 'start' });
   if (typeof target.focus === 'function') target.focus({ preventScroll: true });
@@ -2501,6 +2601,12 @@ function handleResponse(choice) {
     session_run_id: sessionRunId,
     configuration_source: configurationSource,
     administration_mode: administrationMode,
+    session_type: sessionType,
+    deployment_id: deploymentConfig.deploymentId,
+    deployment_environment: deploymentConfig.environment,
+    deployment_config_schema_version: deploymentConfig.schemaVersion,
+    deployment_config_sha256: sessionDeploymentConfigSha256,
+    app_origin: window.location.origin,
     study_id: studyMetadata.studyId,
     condition_id: studyMetadata.conditionId,
     site_id: studyMetadata.siteId,
@@ -2794,12 +2900,7 @@ function renderTaskCompleteThreshold() {
 }
 
 function csvEscape(value) {
-  if (value === undefined || value === null) return '';
-  let str = typeof value === 'string' ? SessionSafety.csvSafeString(value) : String(value);
-  if (/[",\r\n]/.test(str)) {
-    return '"' + str.replace(/"/g, '""') + '"';
-  }
-  return str;
+  return SessionSafety.csvEscapeCell(value);
 }
 
 function median(values) {
@@ -2847,6 +2948,12 @@ function buildTrialCsv() {
     'session_run_id',
     'configuration_source',
     'administration_mode',
+    'session_type',
+    'deployment_id',
+    'deployment_environment',
+    'deployment_config_schema_version',
+    'deployment_config_sha256',
+    'app_origin',
     'study_id',
     'condition_id',
     'site_id',
@@ -2986,7 +3093,8 @@ function buildTrialCsv() {
 function resultFilenameStem() {
   const filenameId = subjectId || 'subject';
   const runId = sessionRunId || 'no-run-id';
-  return `${filenameId}_${runId}_audio_discrimination`;
+  const prefix = sessionType === 'test' ? 'TEST_ONLY_' : '';
+  return `${prefix}${filenameId}_${runId}_audio_discrimination`;
 }
 
 function downloadCsv() {
@@ -3001,6 +3109,12 @@ function buildWideResult() {
     session_run_id: sessionRunId,
     configuration_source: configurationSource,
     administration_mode: administrationMode,
+    session_type: sessionType,
+    deployment_id: deploymentConfig.deploymentId,
+    deployment_environment: deploymentConfig.environment,
+    deployment_config_schema_version: deploymentConfig.schemaVersion,
+    deployment_config_sha256: sessionDeploymentConfigSha256,
+    app_origin: window.location.origin,
     study_id: studyMetadata.studyId,
     condition_id: studyMetadata.conditionId,
     site_id: studyMetadata.siteId,
@@ -3128,10 +3242,24 @@ async function buildResultBundle() {
   const manifest = {
     result_bundle_schema_version: IMPLEMENTATION.resultBundleSchemaVersion,
     generated_at_utc: new Date().toISOString(),
-    data_classification: 'pseudonymous_research_data',
+    data_classification: sessionType === 'test'
+      ? 'test_data_do_not_analyze'
+      : 'pseudonymous_research_data',
     automatic_upload_performed: false,
     administration_mode: administrationMode,
     result_return_requires_external_portal_receipt: administrationMode === 'remote_manual_upload',
+    deployment: {
+      session_type: sessionType,
+      deployment_id: deploymentConfig.deploymentId,
+      environment: deploymentConfig.environment,
+      config_schema_version: deploymentConfig.schemaVersion,
+      config_file: DEPLOYMENT_CONFIG_FILE,
+      config_sha256: sessionDeploymentConfigSha256,
+      app_origin: window.location.origin,
+      researcher_origin: deploymentConfig.researcherOrigin,
+      participant_origin: deploymentConfig.participantOrigin,
+      public_participant_base_url: deploymentConfig.publicParticipantBaseUrl
+    },
     session: {
       subject_id: subjectId,
       session_run_id: sessionRunId,
@@ -3442,11 +3570,19 @@ function validateSessionSettings(settings) {
   });
 }
 
-function participantLinkParameters(validatedSettings, language, metadata = studyMetadata) {
+function participantLinkParameters(
+  validatedSettings,
+  language,
+  metadata = studyMetadata,
+  linkSessionType = sessionType
+) {
   const params = new URLSearchParams();
   params.set('mode', PARTICIPANT_LINK.mode);
   params.set('link_version', PARTICIPANT_LINK.schemaVersion);
   params.set('battery_version', IMPLEMENTATION.batteryVersion);
+  params.set('deployment_id', deploymentConfig.deploymentId);
+  params.set('deployment_config_sha256', deploymentConfigSha256);
+  params.set('session_type', linkSessionType);
   params.set('protocol', validatedSettings.protocolId);
   params.set('protocol_version', validatedSettings.preset.version);
   params.set('catalog_sha256', STIMULUS_CATALOG.sha256);
@@ -3470,16 +3606,24 @@ function participantLinkParameters(validatedSettings, language, metadata = study
 }
 
 function isLocalPreviewUrl(url) {
-  return url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+  return Boolean(globalThis.DeploymentPolicy && DeploymentPolicy.isLoopbackLocation(url));
 }
 
 function buildParticipantLink(validatedSettings, language = currentLanguage, metadata = studyMetadata) {
   if (!isSupportedLanguage(language)) throw new Error('Unsupported language.');
-  const url = new URL(window.location.href);
-  if (url.protocol !== 'https:' && !isLocalPreviewUrl(url)) {
-    throw new Error('Unshareable participant link origin.');
+  if (!deploymentConfig || !deploymentContext || !deploymentConfigSha256 || !globalThis.DeploymentPolicy) {
+    throw new Error('Build identity unavailable.');
   }
-  url.search = participantLinkParameters(validatedSettings, language, metadata).toString();
+  const linkSessionType = deploymentContext.localTest ? 'test' : 'research';
+  const authorizedResearcher = deploymentContext.participantLinkIssuanceAllowed;
+  if (!authorizedResearcher) throw new Error('Unshareable participant link origin.');
+  const url = new URL(DeploymentPolicy.participantBaseUrl(deploymentConfig, window.location.href));
+  url.search = participantLinkParameters(
+    validatedSettings,
+    language,
+    metadata,
+    linkSessionType
+  ).toString();
   url.hash = '';
   if (url.toString().length > MAX_PARTICIPANT_LINK_LENGTH) {
     throw new Error('Participant link is too long.');
@@ -3527,6 +3671,9 @@ function parseParticipantLink() {
     if (
       params.get('link_version') !== PARTICIPANT_LINK.schemaVersion ||
       params.get('battery_version') !== IMPLEMENTATION.batteryVersion ||
+      params.get('deployment_id') !== deploymentConfig?.deploymentId ||
+      params.get('deployment_config_sha256') !== deploymentConfigSha256 ||
+      params.get('session_type') !== sessionType ||
       !isSupportedLanguage(params.get('lang'))
     ) {
       throw new Error('Unsupported participant-link version or language.');
@@ -3549,6 +3696,15 @@ function parseParticipantLink() {
     ) {
       throw new Error('Participant-link provenance does not match this battery.');
     }
+    if (!deploymentContext?.participantSessionAllowed) {
+      throw new Error('This deployment origin cannot run participant sessions.');
+    }
+    if (
+      (params.get('session_type') === 'test') !== Boolean(deploymentContext.localTest) ||
+      (params.get('session_type') === 'research' && deploymentContext.localTest)
+    ) {
+      throw new Error('Participant-link session type does not match this deployment.');
+    }
 
     const parsedStudyMetadata = validateStudyMetadata({
       studyId: params.get('study_id'),
@@ -3567,7 +3723,8 @@ function parseParticipantLink() {
     const canonicalConfig = participantLinkParameters(
       validatedSettings,
       params.get('lang'),
-      parsedStudyMetadata
+      parsedStudyMetadata,
+      params.get('session_type')
     ).toString();
     if (window.location.href.split('#')[0].length > MAX_PARTICIPANT_LINK_LENGTH) {
       throw new Error('Participant link is too long.');
@@ -3603,11 +3760,19 @@ function checkpointIsCompatible(snapshot, validatedSettings, metadata) {
     settings.protocol_id !== validatedSettings.protocolId ||
     settings.protocol_version !== validatedSettings.preset.version ||
     settings.feedback_mode !== validatedSettings.feedbackMode ||
+    settings.session_type !== sessionType ||
+    settings.deployment_id !== deploymentConfig?.deploymentId ||
+    settings.deployment_config_sha256 !== deploymentConfigSha256 ||
     settings.catalog_sha256 !== STIMULUS_CATALOG.sha256 ||
     settings.stimulus_set_id !== validatedSettings.stimulusSet.id ||
     settings.manifest_sha256 !== validatedSettings.stimulusSet.manifestSha256 ||
     snapshot.app_build_sha256 !== appBuildSha256 ||
     snapshot.app_script_sha256 !== appScriptSha256 ||
+    snapshot.session_type !== sessionType ||
+    snapshot.deployment_id !== deploymentConfig?.deploymentId ||
+    snapshot.deployment_environment !== deploymentConfig?.environment ||
+    snapshot.deployment_config_sha256 !== deploymentConfigSha256 ||
+    snapshot.app_origin !== window.location.origin ||
     storedTasks.join('|') !== expectedTasks.join('|') ||
     JSON.stringify(snapshot.study_metadata || {}) !== JSON.stringify(metadata)
   ) return false;
@@ -3643,6 +3808,11 @@ function checkpointStructureIsValid(snapshot) {
     !Number.isInteger(snapshot.revision) || snapshot.revision < 1 ||
     !/^[a-f0-9]{64}$/.test(String(snapshot.app_build_sha256 || '')) ||
     !/^[a-f0-9]{64}$/.test(String(snapshot.app_script_sha256 || '')) ||
+    snapshot.session_type !== sessionType ||
+    snapshot.deployment_id !== deploymentConfig?.deploymentId ||
+    snapshot.deployment_environment !== deploymentConfig?.environment ||
+    snapshot.deployment_config_sha256 !== deploymentConfigSha256 ||
+    snapshot.app_origin !== window.location.origin ||
     typeof snapshot.preflight_audio_passed !== 'boolean' ||
     taskIds.length !== selectedIds.length || uniqueTaskIds.size !== taskIds.length ||
     taskIds.some(id => !taskMap.has(id)) ||
@@ -3675,7 +3845,12 @@ function checkpointStructureIsValid(snapshot) {
   return [...currentRows, ...completedRows].every(row => (
     row && row.subject_id === snapshot.subject_id &&
     row.session_run_id === snapshot.session_run_id &&
-    row.battery_version === IMPLEMENTATION.batteryVersion
+    row.battery_version === IMPLEMENTATION.batteryVersion &&
+    row.session_type === sessionType &&
+    row.deployment_id === deploymentConfig?.deploymentId &&
+    row.deployment_environment === deploymentConfig?.environment &&
+    row.deployment_config_sha256 === deploymentConfigSha256 &&
+    row.app_origin === window.location.origin
   ));
 }
 
@@ -3726,6 +3901,7 @@ function restoreCheckpoint(snapshot) {
   checkpointOwner = createSessionRunId();
   sessionScriptSha256 = snapshot.app_script_sha256;
   sessionBuildSha256 = snapshot.app_build_sha256;
+  sessionDeploymentConfigSha256 = snapshot.deployment_config_sha256;
   configuredInitialLanguage = snapshot.configured_initial_language || configuredInitialLanguage;
   resumeCount = Number(snapshot.resume_count || 0) + 1;
   interruptedPresentationCount = Number(snapshot.interrupted_presentation_count || 0);
@@ -3800,9 +3976,12 @@ function restoreCheckpoint(snapshot) {
 function offerCheckpoint(snapshot, compatible) {
   pendingCheckpoint = snapshot;
   elements.resumeSavedSession.disabled = !compatible;
+  elements.resumeParticipantCode.disabled = !compatible;
+  elements.resumeParticipantCode.value = '';
+  elements.resumeParticipantCode.removeAttribute('aria-invalid');
+  elements.resumeCodeError.textContent = '';
   const description = compatible
     ? t('resume.description', {
-      id: snapshot.subject_id || t('notAvailable'),
       saved: snapshot.saved_at_utc || t('notAvailable'),
       status: snapshot.session_status || t('notAvailable')
     })
@@ -3814,6 +3993,7 @@ function offerCheckpoint(snapshot, compatible) {
 }
 
 function applySessionSettings(validatedSettings, metadata = {}) {
+  assertSessionAuthorization(metadata.configurationSource || 'researcher_ui');
   resetSessionData();
   researcherSettings.selectedTaskIds = validatedSettings.selectedTaskIds.slice();
   researcherSettings.protocolId = validatedSettings.protocolId;
@@ -3878,7 +4058,7 @@ async function createParticipantLink() {
     elements.participantLink.value = buildParticipantLink(validatedSettings, linkLanguage, metadata);
     elements.participantLinkOutput.hidden = false;
     const statusKey = isLocalPreviewUrl(new URL(elements.participantLink.value))
-      ? 'participantLink.localPreview'
+      ? 'deployment.testLinkCreated'
       : 'participantLink.created';
     elements.participantLinkStatus.textContent = t(statusKey, {
       language: t(`participantLink.language.${linkLanguage}`)
@@ -3891,6 +4071,8 @@ async function createParticipantLink() {
         ? 'researcherSetup.buildUnavailable'
         : error.message === 'Unshareable participant link origin.'
         ? 'participantLink.unshareable'
+        : error.message === 'Return URL origin is not allowed.'
+          ? 'deployment.returnOriginBlocked'
         : error.message === 'Participant link is too long.'
           ? 'studyDetails.invalid'
         : !elements.returnUrl.value.trim()
@@ -3901,7 +4083,7 @@ async function createParticipantLink() {
     setResearcherError(errorKey);
     clearParticipantLink();
   } finally {
-    elements.createParticipantLink.disabled = false;
+    renderDeploymentState();
   }
 }
 
@@ -3958,23 +4140,40 @@ function createSessionRunId() {
 }
 
 async function calculateAppBuildIdentity() {
-  if (!globalThis.ResultBundle || !ResultBundle.isSha256Available()) return false;
+  if (
+    !globalThis.ResultBundle || !ResultBundle.isSha256Available() ||
+    !globalThis.DeploymentPolicy || typeof globalThis.TextDecoder !== 'function'
+  ) return false;
   try {
     const entries = await Promise.all(APP_BUILD_ASSETS.map(async name => {
       const response = await fetch(new URL(name, window.location.href), { cache: 'no-store' });
       if (!response.ok) throw new Error(`Could not load ${name} for build verification.`);
-      const sha256 = await ResultBundle.sha256Hex(await response.arrayBuffer());
+      const bytes = await response.arrayBuffer();
+      const sha256 = await ResultBundle.sha256Hex(bytes);
       if (!sha256) throw new Error(`Could not hash ${name}.`);
-      return [name, sha256];
+      return [name, sha256, bytes];
     }));
-    appAssetSha256 = Object.freeze(Object.fromEntries(entries));
+    appAssetSha256 = Object.freeze(Object.fromEntries(entries.map(([name, sha256]) => [name, sha256])));
+    const configEntry = entries.find(([name]) => name === DEPLOYMENT_CONFIG_FILE);
+    if (!configEntry) throw new Error('Deployment configuration was not included in the build.');
+    const configText = new TextDecoder('utf-8', { fatal: true }).decode(configEntry[2]);
+    deploymentConfig = DeploymentPolicy.validateConfig(JSON.parse(configText));
+    deploymentConfigSha256 = appAssetSha256[DEPLOYMENT_CONFIG_FILE] || '';
+    deploymentContext = DeploymentPolicy.contextFor(deploymentConfig, window.location.href);
+    sessionType = deploymentContext.sessionType;
     appScriptSha256 = appAssetSha256['script.js'] || '';
     const descriptor = APP_BUILD_ASSETS.map(name => `${name}:${appAssetSha256[name]}`).join('\n');
     appBuildSha256 = await ResultBundle.sha256Hex(descriptor) || '';
     renderBuildInfo();
-    return Boolean(appBuildSha256 && appScriptSha256);
+    deploymentConfigError = '';
+    return Boolean(appBuildSha256 && appScriptSha256 && deploymentConfigSha256);
   } catch (error) {
     console.error('Build identity calculation failed:', error);
+    deploymentConfigError = String(error?.message || error || 'Deployment configuration unavailable.');
+    deploymentConfig = null;
+    deploymentContext = null;
+    deploymentConfigSha256 = '';
+    sessionType = '';
     appScriptSha256 = '';
     appBuildSha256 = '';
     appAssetSha256 = Object.freeze({});
@@ -4016,7 +4215,16 @@ function offerSupervisedCheckpointAtEntry() {
 
 async function initializeApp() {
   buildIdentityPromise = calculateAppBuildIdentity();
-  await buildIdentityPromise;
+  const buildReady = await buildIdentityPromise;
+  if (!buildReady || !deploymentConfig || !deploymentContext) {
+    const params = new URL(window.location.href).searchParams;
+    setLanguage(isSupportedLanguage(params.get('lang')) ? params.get('lang') : 'en', {
+      preserveParticipantLink: true
+    });
+    elements.deploymentBlockedMessage.textContent = t('deployment.blocked.message');
+    showSection('deploymentBlocked');
+    return;
+  }
   const entry = parseParticipantLink();
   setLanguage(entry.language, { preserveParticipantLink: true });
   if (entry.kind === 'invalid') {
@@ -4033,6 +4241,11 @@ async function initializeApp() {
       configuredInitialLanguage: entry.language,
       studyMetadata: entry.studyMetadata
     });
+    return;
+  }
+  if (!deploymentContext.researcherUiAllowed) {
+    elements.deploymentBlockedMessage.textContent = t('deployment.originBlocked');
+    showSection('deploymentBlocked');
     return;
   }
   configurationSource = 'researcher_ui';
@@ -4093,12 +4306,16 @@ function resetSessionData() {
   visibilityInterruptionCount = 0;
   sessionScriptSha256 = '';
   sessionBuildSha256 = '';
+  sessionDeploymentConfigSha256 = '';
   currentResults.length = 0;
   allResults.length = 0;
   taskSummaries.length = 0;
   elements.subjectId.value = '';
   elements.subjectId.removeAttribute('aria-invalid');
   elements.subjectIdError.textContent = '';
+  elements.resumeParticipantCode.value = '';
+  elements.resumeParticipantCode.removeAttribute('aria-invalid');
+  elements.resumeCodeError.textContent = '';
   elements.overviewParticipantCode.textContent = '';
   elements.decideOrder.disabled = false;
   elements.beginBattery.disabled = false;
@@ -4120,6 +4337,7 @@ async function lockResearchSettings() {
   try {
     await buildIdentityPromise;
     if (!appBuildSha256 || !appScriptSha256) throw new Error('Build identity unavailable.');
+    assertSessionAuthorization('researcher_ui');
     const validatedSettings = validateSessionSettings(getResearcherFormSettings());
     const metadata = getStudyMetadataFromForm();
     applySessionSettings(validatedSettings, {
@@ -4133,6 +4351,10 @@ async function lockResearchSettings() {
     setResearcherError(
       error.message === 'Build identity unavailable.'
         ? 'researcherSetup.buildUnavailable'
+        : error.message === 'Deployment origin is not authorized.'
+          ? 'deployment.originBlocked'
+        : error.message === 'Return URL origin is not allowed.'
+          ? 'deployment.returnOriginBlocked'
         : error.message === 'Invalid task selection.'
         ? 'selectAtLeastOneTask'
         : error.message === 'Invalid study metadata.' || error.message === 'Invalid HTTPS URL.'
@@ -4140,7 +4362,7 @@ async function lockResearchSettings() {
           : 'unavailableTaskSelection'
     );
   } finally {
-    elements.lockSettings.disabled = false;
+    renderDeploymentState();
   }
 }
 
@@ -4221,8 +4443,8 @@ function continueFromPreflight() {
     elements.preflightError.textContent = t('preflight.incomplete');
     return;
   }
-  if (usesSharedGitHubPagesOrigin()) {
-    elements.preflightError.textContent = t('checkpoint.sharedOrigin');
+  if (!sessionAuthorizationAllowed()) {
+    elements.preflightError.textContent = t('deployment.originBlocked');
     return;
   }
   if (!probeCheckpointStorage()) {
@@ -4297,8 +4519,8 @@ async function decideParticipantOrder() {
     elements.decideOrder.disabled = false;
     return;
   }
-  if (usesSharedGitHubPagesOrigin()) {
-    elements.subjectIdError.textContent = t('checkpoint.sharedOrigin');
+  if (!sessionAuthorizationAllowed()) {
+    elements.subjectIdError.textContent = t('deployment.originBlocked');
     elements.decideOrder.disabled = false;
     return;
   }
@@ -4310,6 +4532,7 @@ async function decideParticipantOrder() {
   checkpointOwner = createSessionRunId();
   sessionScriptSha256 = appScriptSha256;
   sessionBuildSha256 = appBuildSha256;
+  sessionDeploymentConfigSha256 = deploymentConfigSha256;
   sessionStatus = 'in_progress';
   sessionStartedAt = new Date(Math.max(Date.now(), readCheckpointDeletionBarrier() + 1)).toISOString();
   sessionEndedAt = '';
@@ -4373,6 +4596,13 @@ elements.retryAudio.addEventListener('click', retryFailedAudio);
 elements.endTechnicalSession.addEventListener('click', endTechnicalFailure);
 elements.resumeSavedSession.addEventListener('click', () => {
   if (!pendingCheckpoint || elements.resumeSavedSession.disabled) return;
+  const enteredCode = elements.resumeParticipantCode.value.trim().toUpperCase();
+  if (!PARTICIPANT_CODE_PATTERN.test(enteredCode) || enteredCode !== pendingCheckpoint.subject_id) {
+    elements.resumeParticipantCode.setAttribute('aria-invalid', 'true');
+    elements.resumeCodeError.textContent = t('resume.code.error');
+    elements.resumeParticipantCode.focus();
+    return;
+  }
   elements.resumeSavedSession.disabled = true;
   try {
     restoreCheckpoint(pendingCheckpoint);
@@ -4383,6 +4613,10 @@ elements.resumeSavedSession.addEventListener('click', () => {
     elements.resumeDescription.textContent = t('resume.incompatible');
     elements.resumeSavedSession.disabled = true;
   }
+});
+elements.resumeParticipantCode.addEventListener('input', () => {
+  elements.resumeParticipantCode.removeAttribute('aria-invalid');
+  elements.resumeCodeError.textContent = '';
 });
 elements.discardSavedSession.addEventListener('click', () => {
   if (!window.confirm(t('session.stopConfirm'))) return;
