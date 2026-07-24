@@ -212,7 +212,7 @@ def validate_deployment_config(config: dict, allow_preview: bool) -> None:
         raise ReleaseBuildError("A production release artifact must enable research sessions.")
     if environment == "production" and not config["researcher_ui_enabled"]:
         raise ReleaseBuildError(
-            "The current supervised-only production artifact must enable the researcher UI."
+            "The current researcher-configured production artifact must enable the researcher UI."
         )
     researcher_origin = exact_https_origin(config.get("researcher_origin"), "researcher_origin")
     participant_origin = exact_https_origin(config.get("participant_origin"), "participant_origin")
@@ -221,7 +221,9 @@ def validate_deployment_config(config: dict, allow_preview: bool) -> None:
     if not isinstance(return_origins, list):
         raise ReleaseBuildError("allowed_return_url_origins must be an array.")
     normalized_return_origins = [
-        exact_https_origin(value, f"allowed_return_url_origins[{index}]")
+        "*" if value == "*" else exact_https_origin(
+            value, f"allowed_return_url_origins[{index}]"
+        )
         for index, value in enumerate(return_origins)
     ]
     if len(set(normalized_return_origins)) != len(normalized_return_origins):

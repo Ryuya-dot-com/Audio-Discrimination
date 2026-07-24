@@ -37,7 +37,7 @@ EXPECTED_TASKS = {
     "sun2021": ("pitch", "formant", "duration", "risetime"),
 }
 EXPECTED_IMPLEMENTATION_VERSIONS = {
-    "batteryVersion": "5.3.0",
+    "batteryVersion": "5.4.0",
     "trialSchemaVersion": 11,
     "wideSchemaVersion": 9,
     "checkpointSchemaVersion": 3,

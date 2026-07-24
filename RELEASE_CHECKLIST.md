@@ -7,26 +7,26 @@ approved study protocol matches the deployed build.
 
 - [ ] CI passes on the exact release commit; no check is waived without a recorded rationale.
 - [ ] The candidate is tested on staging before production, using the same hosting and asset paths.
-- [ ] The implementation contract is `battery 5.3.0`, `trial schema 11`, `wide schema 9`, `checkpoint schema 3`, `participant-link schema 3`, `result-bundle schema 3`; protocol and stimulus-set versions are also updated when their contracts change.
+- [ ] The implementation contract is `battery 5.4.0`, `trial schema 11`, `wide schema 9`, `checkpoint schema 3`, `participant-link schema 3`, `result-bundle schema 3`; protocol and stimulus-set versions are also updated when their contracts change.
 - [ ] The exact non-secret `deployment-config.json` is approved and archived. Its deployment ID/environment, researcher and participant origins, public participant base URL, researcher-UI setting, return-origin allowlist, and local-test setting match the release record; it contains no credentials, tokens, participant identifiers, or secrets.
 - [ ] The deployed app calculates the same non-empty asset-set SHA-256 for `deployment-config.json`, `deployment_policy.js`, `index.html`, `result_bundle.js`, `session_safety.js`, and `script.js` and the same served-`script.js` and deployment-config SHA-256 values on two clean loads; all are recorded in exported data and match the release record.
-- [ ] Production/staging research sessions run only on the exact HTTPS origins frozen in the deployment configuration. Shared `*.github.io`, arbitrary HTTPS copies, and `file://` are confirmed to block research-session entry; loopback can create only visibly labelled `test` sessions.
+- [ ] Production/staging research sessions run only on the exact HTTPS origins frozen in the deployment configuration. Arbitrary HTTPS copies and `file://` are confirmed to block research-session entry; loopback creates only visibly labelled `test` sessions.
 - [ ] A loopback UAT export uses the `TEST_ONLY_` filename prefix and records `session_type=test` plus `test_data_do_not_analyze` consistently in checkpoint, both CSV representations, and manifest. The research-ingestion workflow rejects or segregates it.
 - [ ] The production participant origin does not expose researcher setup unless explicitly required: `researcher_ui_enabled` and the exact researcher origin are verified independently from participant-link execution.
-- [ ] Every configured remote return URL has an exact origin in `allowed_return_url_origins`; lookalike subdomains, credentials, HTTP, and unlisted ports are rejected.
+- [ ] Return-URL policy is reviewed: use exact origins in `allowed_return_url_origins` when possible; if the explicit `"*"` wildcard is retained, document that any HTTPS return origin entered in the public researcher UI will be accepted. Credentials and HTTP remain rejected.
 - [ ] Production deployment is approved separately from merging. A source-branch push cannot update production without a distinct approval; rollback to the previous tagged build has been rehearsed.
-- [ ] The release is tagged and the dedicated production URL is archived. If a future signed-link implementation enables remote collection, the exact fully generated participant link—not only the base URL—is reviewed, UAT-tested, and archived for every distribution ID.
+- [ ] The release is tagged and the production URL is archived. For remote collection, the exact fully generated participant link—not only the base URL—is reviewed, UAT-tested, and archived for every distribution ID.
 
 ## Study mode, consent, and result return
 
 - [ ] Exactly one operating mode is declared: **supervised** (same browser/device, researcher exports locally) or **remote manual return** (participant saves the ZIP and uses an approved external authenticated portal).
 - [ ] For remote use, the pre-consent information states the complete ZIP → portal upload → receipt retention → browser-clear sequence, and support instructions cover failure at every step.
 - [ ] End-to-end submission, duplicate handling, failure recovery, researcher receipt reconciliation, and the participant's explicit post-receipt clear action are tested. A participant launch link alone is not a return channel, and the app's receipt confirmation is a participant assertion rather than server verification.
-- [ ] Remote production links are authorized by an authenticated issuer and cryptographically bind the approved configuration, expiry, invitation/distribution ID, and all external URLs. No browser-delivered signing secret is used. Until this exists, remote links are test-only; a supervised-only study documents that remote return is disabled.
-- [ ] The researcher configuration origin is protected by the approved SSO/MFA policy and is operationally separate from the public participant origin.
+- [ ] The release record states that remote links are unsigned, reusable, contain no expiry, do not authenticate either party, and expose the named study configuration. The exact distributed URL and independent study-contact instructions are archived for each distribution.
+- [ ] If the researcher configuration origin is public or shared with the participant origin, the study accepts that anyone can construct a link. Studies that require authenticated configuration use a separate protected researcher origin.
 - [ ] Ethics approval, study identity, researcher contact, estimated duration, eligibility, withdrawal procedure, data handling, and consent text/version are shown or linked before participation.
 - [ ] Participant-facing completion text states whether data were sent, saved locally, or still require action, and gives a receipt/reference when applicable.
-- [ ] The current release is verified to reject unsigned production/staging participant-link issuance and execution. A future signed-link implementation receives a new schema/security review; authenticated researcher access, participant identity policy, blinding, and result return are assessed separately.
+- [ ] The current release is verified to accept only structurally canonical unsigned links matching the frozen deployment/build/stimulus configuration. A future signed-link implementation receives a new schema/security review; authenticated researcher access, participant identity policy, blinding, and result return are assessed separately.
 
 ## Persistence, recovery, and data integrity
 
@@ -43,6 +43,8 @@ approved study protocol matches the deployed build.
 ## Participant UAT
 
 - [ ] A researcher and a person unfamiliar with the project complete the full flow from invitation through confirmed result return without coaching.
+- [ ] The researcher completes all three setup steps in order; Back preserves values, invalid metadata returns focus to the exact field with a local explanation, and changing an encoded setting invalidates the previously generated link.
+- [ ] The participant-language selector initially follows the researcher UI language, remains independent after manual selection, and the copied invitation uses that selected language with the exact generated link, assigned pseudonymous code, and approved return portal. Generated codes are recorded in the approved roster and checked for duplicates.
 - [ ] English-default and Japanese flows, language switching, valid/invalid participant links, code correction, task order, practice, breaks, completion, and researcher handoff are tested.
 - [ ] Headphone/audio setup, playback permission, missing/slow audio, retry, low bandwidth, interruption, and supported desktop/mobile browsers are tested.
 - [ ] Consent, contact, and return URLs are HTTPS without credentials, no more than 1,024 characters each, and preserve required fragments; generated participant links remain at or below 4,096 characters and reject over-limit values.

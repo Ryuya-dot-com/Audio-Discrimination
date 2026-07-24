@@ -4,11 +4,11 @@
 This is a strict, dependency-free *self-consistency* validator.  It validates the
 ZIP container, the complete schema-versioned CSV headers, every manifest object,
 and the joins and invariants shared by the manifest and both CSVs.  It does not
-authenticate an external upload receipt and it cannot establish author identity
-or chain of custody because bundles are not externally signed; those controls
-belong to the approved return portal and ingestion workflow.  For the current
-unsigned participant-link schema, remote research bundles are unreachable
-runtime states and are rejected; remote-manual-return bundles are TEST-only.
+authenticate an external upload receipt and it cannot establish issuer identity
+or chain of custody because bundles and participant links are not externally
+signed; those controls belong to the return portal and ingestion workflow.
+Unsigned remote-manual-return research bundles are accepted when their
+deployment, participant-link configuration, CSVs, and manifest agree exactly.
 """
 
 from __future__ import annotations
@@ -88,6 +88,11 @@ PARTICIPANT_LINK_SCHEMA_VERSION = CODEBOOK["participant_link_schema_version"]
 SIGNED_PARTICIPANT_LINKS_SUPPORTED = CODEBOOK["signed_participant_links_supported"]
 if SIGNED_PARTICIPANT_LINKS_SUPPORTED is not False:
     _fail("result codebook enables signed participant links without validator support")
+UNSIGNED_REMOTE_PARTICIPANT_LINKS_SUPPORTED = CODEBOOK[
+    "unsigned_remote_participant_links_supported"
+]
+if UNSIGNED_REMOTE_PARTICIPANT_LINKS_SUPPORTED is not True:
+    _fail("result codebook must declare unsigned remote participant-link support")
 CHECKPOINT_SCHEMA_VERSION = CODEBOOK["checkpoint_schema_version"]
 RESULT_BUNDLE_SCHEMA_VERSION = CODEBOOK["result_bundle_schema_version"]
 TRIAL_SCHEMA_VERSION = max(int(version) for version in CODEBOOK["csv_schemas"]["trial"])
@@ -411,10 +416,6 @@ def _validate_manifest(manifest: dict[str, Any]) -> tuple[dict[str, Any], ...]:
     session_type = deployment["session_type"]
     if session_type not in {"research", "test"}:
         _fail("manifest.deployment.session_type is invalid")
-    if administration == "remote_manual_upload" and session_type != "test":
-        _fail(
-            "unsigned participant-link schema 3 permits remote_manual_upload only for TEST sessions"
-        )
     expected_classification = (
         "test_data_do_not_analyze" if session_type == "test" else "pseudonymous_research_data"
     )

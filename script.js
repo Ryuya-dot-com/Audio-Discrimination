@@ -62,12 +62,12 @@ const BASE_CONFIG = {
 };
 
 const IMPLEMENTATION = Object.freeze({
-  batteryVersion: '5.3.0',
+  batteryVersion: '5.4.0',
   trialSchemaVersion: 11,
   wideSchemaVersion: 9,
   checkpointSchemaVersion: 3,
   resultBundleSchemaVersion: 3,
-  appBuildId: 'audio-discrimination-5.3.0',
+  appBuildId: 'audio-discrimination-5.4.0',
   procedureScope: 'study_profile_binds_adaptive_procedure_scoring_and_stimulus_set',
   taskOrderMethod: 'subject_id_seeded_shuffle',
   reversalDefinition: 'intended_nonzero_staircase_direction_change',
@@ -395,7 +395,21 @@ const I18N = {
     'session.stopConfirm': 'Stop this session and delete its unsent local data from this browser? This cannot be undone.',
     'researcherSetup.tag': 'Researcher setup',
     'researcherSetup.title': 'Configure the listening battery',
-    'researcherSetup.intro': 'Select the tasks, study profile, and feedback shown to participants. Each profile fixes both the adaptive procedure and its matching stimulus set.',
+    'researcherSetup.intro': 'Complete three short steps to identify the study, choose the procedure, and prepare either remote distribution or a supervised session.',
+    'researcherWizard.steps.label': 'Researcher setup progress',
+    'researcherWizard.step.study': '1. Study information',
+    'researcherWizard.step.tasks': '2. Tasks and procedure',
+    'researcherWizard.step.launch': '3. Distribute or start',
+    'researcherWizard.study.title': 'Enter the study information',
+    'researcherWizard.study.intro': 'This information is shown to participants and included in every result package.',
+    'researcherWizard.tasks.title': 'Choose the tasks and procedure',
+    'researcherWizard.tasks.intro': 'Select a published procedure profile, then confirm the available listening tasks and participant feedback.',
+    'researcherWizard.launch.title': 'Distribute the study or start on this device',
+    'researcherWizard.launch.intro': 'For remote participation, create a link and copy the complete invitation. For supervised testing, start directly on this device.',
+    'researcherWizard.supervised.title': 'Supervised session on this device',
+    'researcherWizard.supervised.intro': 'Use this when the researcher controls this device and will enter or provide the participant code at the session.',
+    'researcherWizard.next': 'Next',
+    'researcherWizard.back': 'Back',
     'researcherSetup.tasks.legend': 'Tasks',
     'researcherSetup.tasks.help': 'Task availability follows the selected study profile. Participant task screens use neutral Listening Task labels; the generated URL carries named task settings.',
     'researcherSetup.protocol.label': 'Study profile (procedure and stimuli)',
@@ -420,16 +434,22 @@ const I18N = {
     'studyDetails.consentVersion.label': 'Consent version',
     'studyDetails.consentVersion.placeholder': 'e.g., 2026-01',
     'studyDetails.minutes.label': 'Expected duration (minutes)',
-    'studyDetails.publicUrlHelp': 'These URLs are included in local TEST links and are reserved for a future signed remote-link flow. Use public study pages only; never include credentials, access tokens, or participant-specific secrets.',
+    'studyDetails.publicUrlHelp': 'These URLs are included in participant links. Use public study pages only; never include credentials, access tokens, or participant-specific secrets.',
     'studyDetails.consentUrl.label': 'Consent information URL (HTTPS)',
     'studyDetails.contactUrl.label': 'Researcher contact URL (HTTPS)',
     'studyDetails.returnUrl.label': 'Remote result-return portal (HTTPS)',
-    'studyDetails.returnUrl.help': 'Required when testing the remote-return flow. Production remote links remain disabled; a future approved portal must provide its own upload receipt.',
+    'studyDetails.returnUrl.help': 'Required for a participant link. The portal must use HTTPS and provide its own upload receipt. This deployment accepts any HTTPS return origin.',
     'studyDetails.invalid': 'Complete every study detail with the required format. Use HTTPS links and do not include usernames or passwords in URLs.',
     'studyDetails.returnRequired': 'Add an approved HTTPS result-return portal before creating a remote participant link.',
-    'participantLink.title': 'Participant link (local TEST only)',
-    'participantLink.intro': 'Create a local TEST link that fixes the study metadata, procedure, stimuli, tasks, feedback, return portal, and starting language. Production remote-link issuance is disabled until an authenticated issuer and signature verification are integrated.',
-    'participantLink.limitations': 'Local TEST links are reusable and unsigned. They are not proof of identity, a one-time invitation, or a blinding mechanism, and must never be distributed for research data collection.',
+    'studyDetails.reviewErrors': 'Review the highlighted study information before continuing.',
+    'studyDetails.code.error': 'Use 1–64 characters, starting with a letter, and only letters, numbers, hyphens, or underscores.',
+    'studyDetails.text.error': 'Enter a value of 1–120 characters without control characters.',
+    'studyDetails.version.error': 'Use 1–64 letters, numbers, periods, hyphens, or underscores.',
+    'studyDetails.minutes.error': 'Enter a whole number from 1 to 240.',
+    'studyDetails.url.error': 'Enter a public HTTPS URL without a username or password.',
+    'participantLink.title': 'Participant link (unsigned manual return)',
+    'participantLink.intro': 'Create a participant link that fixes the study metadata, procedure, stimuli, tasks, feedback, return portal, and starting language. On an approved HTTPS deployment, the link can be shared for manual result return.',
+    'participantLink.limitations': 'This link is reusable and unsigned. It does not authenticate the researcher or participant, is not a one-time invitation, and exposes the named study configuration. Verify the study identity and reconcile every returned ZIP independently.',
     'participantLink.startLanguage.label': 'Participant starting language',
     'participantLink.language.en': 'English',
     'participantLink.language.ja': 'Japanese',
@@ -437,15 +457,27 @@ const I18N = {
     'participantLink.label': 'Generated participant link',
     'participantLink.copy': 'Copy link',
     'participantLink.open': 'Open participant view',
-    'participantLink.created': 'Participant link created. Starting language: {language}. Check the settings before sharing it.',
+    'participantLink.created': 'Unsigned participant link created. Starting language: {language}. Verify every setting and the return-portal address before sharing it.',
     'participantLink.localPreview': 'Local preview link created. Starting language: {language}. Do not distribute this link; create the study link from the deployed HTTPS app.',
-    'participantLink.unshareable': 'This build creates participant links only for visibly labelled local TEST sessions. Production remote links remain disabled until signed-link verification is integrated.',
+    'participantLink.unshareable': 'This origin is not authorized to issue participant links. Open the configured researcher origin or use localhost for a TEST link.',
     'participantLink.copied': 'Participant link copied.',
     'participantLink.copyFailed': 'The link could not be copied automatically. Select and copy it from the field.',
     'participantLink.openFailed': 'The participant view could not be opened. Copy the link and open it in a new tab.',
     'participantLink.loaded': 'Study settings were loaded from the participant link. Research settings cannot be changed on this page.',
+    'participantHandoff.title': 'Prepare the participant invitation',
+    'participantHandoff.intro': 'Assign a pseudonymous code, then copy one message containing the code, link, and completion instructions.',
+    'participantHandoff.code.label': 'Participant code for this invitation',
+    'participantHandoff.code.placeholder': 'e.g., P001',
+    'participantHandoff.code.help': 'Use a pseudonymous code from your approved study roster. Record generated codes in the roster and check for duplicates. Do not use a direct identifier.',
+    'participantHandoff.code.error': 'Use 1–32 characters, starting with a letter, and only letters, numbers, hyphens, or underscores.',
+    'participantHandoff.generate': 'Generate code',
+    'participantHandoff.copy': 'Copy complete invitation',
+    'participantHandoff.copied': 'The complete participant invitation was copied.',
+    'participantHandoff.copyFailed': 'The invitation could not be copied automatically. Copy the participant link and code separately.',
+    'participantHandoff.instructions': '{title}\n\nOpen the study link:\n{link}\n\nParticipant code: {code}\n\nUse headphones in a quiet place and keep the same browser tab open. At completion, download the ZIP, upload it to the approved portal below, confirm the portal receipt, and clear the browser copy.\n\nResult-return portal:\n{portal}',
     'deployment.testBanner': 'TEST SESSION — LOCAL TEST DATA — DO NOT COMBINE WITH RESEARCH DATA',
     'deployment.stagingBanner': 'STAGING DEPLOYMENT — verify the deployment environment before use',
+    'deployment.unsignedRemoteBanner': 'UNSIGNED REMOTE WORKFLOW — links are reusable and do not authenticate the researcher or participant',
     'deployment.blocked.tag': 'Deployment unavailable',
     'deployment.blocked.title': 'This deployment cannot run a session',
     'deployment.blocked.message': 'The frozen deployment configuration is missing, invalid, or does not authorize this origin. Stop here and contact the study administrator.',
@@ -465,7 +497,7 @@ const I18N = {
     'landing.consentVersion': 'Consent version',
     'landing.voluntary': 'Participation is voluntary. You may stop before submitting results. Follow the study consent information for withdrawal or deletion requests.',
     'landing.localStorage': 'A pseudonymous recovery copy is stored in this browser until the session is explicitly cleared. Do not use a shared device unless the study permits it.',
-    'landing.remoteWorkflow': 'For remote participation, completion requires downloading a ZIP, uploading it in the approved portal, checking the portal receipt, and then clearing this browser copy. The app does not upload automatically.',
+    'landing.remoteWorkflow': 'This is an unsigned, reusable study link. Independently verify the study identity and return-portal address. Completion requires downloading a ZIP, uploading it in the approved portal, checking the portal receipt, and then clearing this browser copy. The app does not upload automatically.',
     'landing.openConsent': 'Open consent information',
     'landing.contactResearcher': 'Contact the research team',
     'landing.confirmConsent': 'I confirm that I completed the study’s consent process and want to continue.',
@@ -697,7 +729,21 @@ const I18N = {
     'session.stopConfirm': 'このセッションを中止し、未送信のローカルデータをこのブラウザから削除しますか？この操作は取り消せません。',
     'researcherSetup.tag': '研究者設定',
     'researcherSetup.title': '聴覚課題を設定する',
-    'researcherSetup.intro': '実施する課題、研究プロファイル、参加者へのフィードバックを選択してください。各プロファイルは、適応手続きと対応する刺激セットを一体として固定します。',
+    'researcherSetup.intro': '3つの短い手順で研究情報と実施手続きを設定し、遠隔配布または監督下セッションを準備します。',
+    'researcherWizard.steps.label': '研究者設定の進捗',
+    'researcherWizard.step.study': '1. 研究情報',
+    'researcherWizard.step.tasks': '2. 課題と手続き',
+    'researcherWizard.step.launch': '3. 配布または開始',
+    'researcherWizard.study.title': '研究情報を入力',
+    'researcherWizard.study.intro': 'ここで入力した内容は参加者に表示され、すべての結果パッケージにも保存されます。',
+    'researcherWizard.tasks.title': '課題と手続きを選択',
+    'researcherWizard.tasks.intro': '先行研究に対応するプロファイルを選び、実施できる課題と参加者へのフィードバックを確認します。',
+    'researcherWizard.launch.title': '研究を配布またはこの端末で開始',
+    'researcherWizard.launch.intro': '遠隔実施ではリンクを作成して案内文全体をコピーします。監督下実施では、この端末から直接開始します。',
+    'researcherWizard.supervised.title': 'この端末で監督下セッション',
+    'researcherWizard.supervised.intro': '研究者がこの端末を管理し、セッション時に参加者コードを入力または参加者へ伝える場合に使用します。',
+    'researcherWizard.next': '次へ',
+    'researcherWizard.back': '戻る',
     'researcherSetup.tasks.legend': '実施する課題',
     'researcherSetup.tasks.help': '実施できる課題は、選択した研究プロファイルに従います。参加者の課題画面には中立的な「リスニング課題」名を表示しますが、生成URLには課題設定名が含まれます。',
     'researcherSetup.protocol.label': '研究プロファイル（手続き・刺激）',
@@ -722,16 +768,22 @@ const I18N = {
     'studyDetails.consentVersion.label': '同意文書版',
     'studyDetails.consentVersion.placeholder': '例：2026-01',
     'studyDetails.minutes.label': '所要時間の目安（分）',
-    'studyDetails.publicUrlHelp': 'これらのURLはローカルTEST用リンクに含まれ、将来の署名付き遠隔リンクでも使用する予定です。公開用の研究ページだけを使用し、認証情報、アクセストークン、参加者固有の秘密値を含めないでください。',
+    'studyDetails.publicUrlHelp': 'これらのURLは参加者用リンクに含まれます。公開用の研究ページだけを使用し、認証情報、アクセストークン、参加者固有の秘密値を含めないでください。',
     'studyDetails.consentUrl.label': '同意説明URL（HTTPS）',
     'studyDetails.contactUrl.label': '研究者連絡先URL（HTTPS）',
     'studyDetails.returnUrl.label': '遠隔結果返却ポータル（HTTPS）',
-    'studyDetails.returnUrl.help': '遠隔返却フローのTEST時に必須です。本番の遠隔リンクは無効であり、将来使用する承認済みポータルは独自のアップロード受領証を発行する必要があります。',
+    'studyDetails.returnUrl.help': '参加者用リンクの作成時に必須です。HTTPSのポータルを使用し、ポータル側でアップロード受領証を発行してください。この配備は任意のHTTPS返却先を受け付けます。',
     'studyDetails.invalid': '研究情報を指定形式ですべて入力してください。URLはHTTPSとし、ユーザー名やパスワードを含めないでください。',
     'studyDetails.returnRequired': '遠隔参加者用リンクを作成する前に、承認済みのHTTPS結果返却ポータルを指定してください。',
-    'participantLink.title': '参加者用リンク（ローカルTEST専用）',
-    'participantLink.intro': '研究情報、手続き、刺激、課題、フィードバック、結果返却先、開始言語を固定したローカルTEST用リンクを作成します。認証済み発行者と署名検証を統合するまで、本番の遠隔リンク発行は無効です。',
-    'participantLink.limitations': 'ローカルTEST用リンクは再利用可能で未署名です。本人確認、一回限りの招待、盲検化にはならず、研究データ収集には決して配布しないでください。',
+    'studyDetails.reviewErrors': '強調表示された研究情報を確認してから次へ進んでください。',
+    'studyDetails.code.error': '半角英字で始まる1～64文字の半角英数字・ハイフン・アンダースコアを使用してください。',
+    'studyDetails.text.error': '制御文字を含まない1～120文字で入力してください。',
+    'studyDetails.version.error': '1～64文字の半角英数字・ピリオド・ハイフン・アンダースコアを使用してください。',
+    'studyDetails.minutes.error': '1～240の整数を入力してください。',
+    'studyDetails.url.error': 'ユーザー名やパスワードを含まない公開HTTPS URLを入力してください。',
+    'participantLink.title': '参加者用リンク（未署名・手動返却）',
+    'participantLink.intro': '研究情報、手続き、刺激、課題、フィードバック、結果返却先、開始言語を固定した参加者用リンクを作成します。承認済みHTTPS配備では、ZIPを手動返却する遠隔実施用として共有できます。',
+    'participantLink.limitations': 'このリンクは再利用可能で未署名です。研究者や参加者の本人確認、一回限りの招待にはならず、研究設定名もURLに含まれます。研究の正当性を別経路で確認し、返却されたZIPを1件ずつ照合してください。',
     'participantLink.startLanguage.label': '参加者画面の開始言語',
     'participantLink.language.en': '英語',
     'participantLink.language.ja': '日本語',
@@ -739,15 +791,27 @@ const I18N = {
     'participantLink.label': '作成した参加者用リンク',
     'participantLink.copy': 'リンクをコピー',
     'participantLink.open': '参加者画面を開く',
-    'participantLink.created': '参加者用リンクを作成しました。開始言語：{language}。共有前に設定内容を確認してください。',
+    'participantLink.created': '未署名の参加者用リンクを作成しました。開始言語：{language}。共有前に全設定と結果返却先を確認してください。',
     'participantLink.localPreview': 'ローカル検証用リンクを作成しました。開始言語：{language}。このリンクは配布せず、公開済みHTTPSアプリから研究用リンクを作成してください。',
-    'participantLink.unshareable': 'このビルドで作成できるのは、明示的に表示されたローカルTESTセッションのリンクだけです。署名付きリンク検証を統合するまで、本番の遠隔リンクは無効です。',
+    'participantLink.unshareable': 'このoriginでは参加者用リンクを発行できません。設定済みの研究者用originを開くか、localhostでTESTリンクを作成してください。',
     'participantLink.copied': '参加者用リンクをコピーしました。',
     'participantLink.copyFailed': 'リンクを自動でコピーできませんでした。入力欄から選択してコピーしてください。',
     'participantLink.openFailed': '参加者画面を開けませんでした。リンクをコピーして新しいタブで開いてください。',
     'participantLink.loaded': '参加者用リンクから実施設定を読み込みました。このページでは研究設定を変更できません。',
+    'participantHandoff.title': '参加者への案内を準備',
+    'participantHandoff.intro': '仮名化コードを割り当て、コード・リンク・完了時の手順を含む案内文をまとめてコピーします。',
+    'participantHandoff.code.label': 'この案内に割り当てる参加者コード',
+    'participantHandoff.code.placeholder': '例：P001',
+    'participantHandoff.code.help': '承認済み研究用対応表の仮名化コードを使用してください。生成したコードは対応表へ記録し、重複を確認してください。直接識別子は使用しないでください。',
+    'participantHandoff.code.error': '半角英字で始まる1～32文字の半角英数字・ハイフン・アンダースコアを使用してください。',
+    'participantHandoff.generate': 'コードを生成',
+    'participantHandoff.copy': '案内文全体をコピー',
+    'participantHandoff.copied': '参加者への案内文全体をコピーしました。',
+    'participantHandoff.copyFailed': '案内文を自動でコピーできませんでした。参加者用リンクとコードを個別にコピーしてください。',
+    'participantHandoff.instructions': '{title}\n\n次の研究用リンクを開いてください：\n{link}\n\n参加者コード：{code}\n\n静かな場所でヘッドホンを使用し、同じブラウザタブを開いたまま進めてください。完了後はZIPを保存し、下記の承認済みポータルへアップロードして受領証を確認し、ブラウザ内コピーを消去してください。\n\n結果返却ポータル：\n{portal}',
     'deployment.testBanner': 'テストセッション — ローカル検証データ — 研究データと混在禁止',
     'deployment.stagingBanner': 'ステージング環境 — 使用前に配備環境を確認してください',
+    'deployment.unsignedRemoteBanner': '未署名の遠隔実施 — リンクは再利用可能で、研究者や参加者の本人確認は行いません',
     'deployment.blocked.tag': '配備を利用できません',
     'deployment.blocked.title': 'この配備ではセッションを実行できません',
     'deployment.blocked.message': '固定された配備設定が欠損、不正、または現在のoriginを許可していません。ここで停止し、研究管理者へ連絡してください。',
@@ -767,7 +831,7 @@ const I18N = {
     'landing.consentVersion': '同意文書版',
     'landing.voluntary': '参加は任意です。結果を提出する前なら中止できます。参加取り消しや削除依頼は、研究の同意説明に従ってください。',
     'landing.localStorage': 'セッションを明示的に消去するまで、仮名化された復旧用コピーがこのブラウザに保存されます。研究で許可されていない限り、共有端末を使用しないでください。',
-    'landing.remoteWorkflow': '遠隔参加では、ZIPの保存、承認済みポータルへのアップロード、受領証の確認、このブラウザ内コピーの消去までが必要です。このアプリは自動アップロードしません。',
+    'landing.remoteWorkflow': 'これは未署名で再利用可能な研究リンクです。研究の正当性と結果返却先を別経路で確認してください。完了には、ZIPの保存、承認済みポータルへのアップロード、受領証の確認、このブラウザ内コピーの消去までが必要です。このアプリは自動アップロードしません。',
     'landing.openConsent': '同意説明を開く',
     'landing.contactResearcher': '研究チームに連絡',
     'landing.confirmConsent': '研究の同意手続きを完了し、続行を希望します。',
@@ -996,12 +1060,16 @@ function isSupportedLanguage(language) {
   return SUPPORTED_LANGUAGES.includes(language);
 }
 
-function t(key, variables = {}) {
-  const dictionary = isSupportedLanguage(currentLanguage) ? I18N[currentLanguage] : I18N.en;
+function tFor(language, key, variables = {}) {
+  const dictionary = isSupportedLanguage(language) ? I18N[language] : I18N.en;
   const template = dictionary[key] ?? I18N.en[key] ?? key;
   return String(template).replace(/\{(\w+)\}/g, (match, name) => (
     Object.prototype.hasOwnProperty.call(variables, name) ? variables[name] : match
   ));
+}
+
+function t(key, variables = {}) {
+  return tFor(currentLanguage, key, variables);
 }
 
 function applyStaticTranslations() {
@@ -1024,7 +1092,9 @@ function renderDeploymentState() {
       ? 'deployment.testBanner'
       : deploymentConfig?.environment === 'staging'
         ? 'deployment.stagingBanner'
-        : '';
+        : context?.unsignedRemoteParticipantAllowed
+          ? 'deployment.unsignedRemoteBanner'
+          : '';
     elements.deploymentBanner.hidden = !bannerKey;
     elements.deploymentBanner.textContent = bannerKey ? t(bannerKey) : '';
   }
@@ -1058,8 +1128,14 @@ function renderBuildInfo() {
 function setLanguage(language, { preserveParticipantLink = false } = {}) {
   if (!isSupportedLanguage(language)) return;
   currentLanguage = language;
+  if (configurationSource === 'researcher_ui' && !participantLinkLanguageCustomized && elements.participantLinkLanguage) {
+    elements.participantLinkLanguage.value = language;
+  }
   if (!preserveParticipantLink && configurationSource === 'researcher_ui') clearParticipantLink();
   applyStaticTranslations();
+  document.querySelectorAll('.field-error[data-error-key]').forEach(errorElement => {
+    errorElement.textContent = t(errorElement.dataset.errorKey);
+  });
   renderDeploymentState();
   renderBuildInfo();
   elements.langEn.setAttribute('aria-pressed', String(language === 'en'));
@@ -1069,6 +1145,9 @@ function setLanguage(language, { preserveParticipantLink = false } = {}) {
   if (researcherErrorKey) elements.researcherError.textContent = t(researcherErrorKey);
   if (elements.subjectId.getAttribute('aria-invalid') === 'true') {
     elements.subjectIdError.textContent = t('setup.subjectId.error');
+  }
+  if (elements.invitationParticipantCode?.getAttribute('aria-invalid') === 'true') {
+    elements.invitationParticipantCodeError.textContent = t('participantHandoff.code.error');
   }
   if (studyMetadata.studyId) renderParticipantLanding();
 
@@ -1166,6 +1245,16 @@ const elements = {
   feedbackMode: document.getElementById('feedbackMode'),
   feedbackDescription: document.getElementById('feedbackDescription'),
   researcherError: document.getElementById('researcherError'),
+  researcherStepStudy: document.getElementById('researcherStepStudy'),
+  researcherStepTasks: document.getElementById('researcherStepTasks'),
+  researcherStepLaunch: document.getElementById('researcherStepLaunch'),
+  researcherStepIndicator1: document.getElementById('researcherStepIndicator1'),
+  researcherStepIndicator2: document.getElementById('researcherStepIndicator2'),
+  researcherStepIndicator3: document.getElementById('researcherStepIndicator3'),
+  researcherStudyNext: document.getElementById('researcherStudyNext'),
+  researcherTasksBack: document.getElementById('researcherTasksBack'),
+  researcherTasksNext: document.getElementById('researcherTasksNext'),
+  researcherLaunchBack: document.getElementById('researcherLaunchBack'),
   buildInfo: document.getElementById('buildInfo'),
   deploymentOriginWarning: document.getElementById('deploymentOriginWarning'),
   lockSettings: document.getElementById('lockSettings'),
@@ -1176,6 +1265,12 @@ const elements = {
   copyParticipantLink: document.getElementById('copyParticipantLink'),
   openParticipantLink: document.getElementById('openParticipantLink'),
   participantLinkStatus: document.getElementById('participantLinkStatus'),
+  participantHandoff: document.getElementById('participantHandoff'),
+  invitationParticipantCode: document.getElementById('invitationParticipantCode'),
+  invitationParticipantCodeError: document.getElementById('invitationParticipantCodeError'),
+  generateParticipantCode: document.getElementById('generateParticipantCode'),
+  copyParticipantInstructions: document.getElementById('copyParticipantInstructions'),
+  participantInstructionsStatus: document.getElementById('participantInstructionsStatus'),
   participantLandingTitle: document.getElementById('participantLandingTitle'),
   participantInstitution: document.getElementById('participantInstitution'),
   participantStudyId: document.getElementById('participantStudyId'),
@@ -1291,6 +1386,7 @@ let participantLinkValidationStatus = 'not_applicable';
 let participantLinkConfig = '';
 let configuredInitialLanguage = 'en';
 let researcherErrorKey = '';
+let participantLinkLanguageCustomized = false;
 let administrationMode = 'supervised';
 let studyMetadata = Object.freeze({});
 let sessionStatus = 'not_started';
@@ -1453,18 +1549,108 @@ function validateStudyMetadata(metadata, { requireReturnUrl = false } = {}) {
 
 function getStudyMetadataFromForm({ requireReturnUrl = false } = {}) {
   return validateStudyMetadata({
-    studyId: elements.studyId.value,
-    conditionId: elements.conditionId.value,
-    siteId: elements.siteId.value,
-    distributionId: elements.distributionId.value,
-    studyTitle: elements.studyTitle.value,
-    institutionName: elements.institutionName.value,
-    consentVersion: elements.consentVersion.value,
+    studyId: elements.studyId.value.trim(),
+    conditionId: elements.conditionId.value.trim(),
+    siteId: elements.siteId.value.trim(),
+    distributionId: elements.distributionId.value.trim(),
+    studyTitle: elements.studyTitle.value.trim(),
+    institutionName: elements.institutionName.value.trim(),
+    consentVersion: elements.consentVersion.value.trim(),
     expectedMinutes: elements.expectedMinutes.valueAsNumber,
     consentUrl: elements.consentUrl.value,
     contactUrl: elements.contactUrl.value,
     returnUrl: elements.returnUrl.value
   }, { requireReturnUrl });
+}
+
+function clearResearcherFieldError(input) {
+  if (!input) return;
+  input.removeAttribute('aria-invalid');
+  const errorId = `${input.id}FieldError`;
+  const errorElement = document.getElementById(errorId);
+  if (errorElement) errorElement.remove();
+  const describedBy = (input.getAttribute('aria-describedby') || '')
+    .split(/\s+/)
+    .filter(id => id && id !== errorId);
+  if (describedBy.length) input.setAttribute('aria-describedby', describedBy.join(' '));
+  else input.removeAttribute('aria-describedby');
+}
+
+function setResearcherFieldError(input, key) {
+  clearResearcherFieldError(input);
+  const errorId = `${input.id}FieldError`;
+  const errorElement = document.createElement('p');
+  errorElement.id = errorId;
+  errorElement.className = 'error-message field-error';
+  errorElement.dataset.errorKey = key;
+  errorElement.textContent = t(key);
+  input.insertAdjacentElement('afterend', errorElement);
+  input.setAttribute('aria-invalid', 'true');
+  const describedBy = (input.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+  if (!describedBy.includes(errorId)) describedBy.push(errorId);
+  input.setAttribute('aria-describedby', describedBy.join(' '));
+}
+
+function validateResearcherMetadataForm({ requireReturnUrl = false, validateReturnUrl = true } = {}) {
+  const invalid = [];
+  const markInvalid = (input, key) => {
+    setResearcherFieldError(input, key);
+    invalid.push(input);
+  };
+  const codeInputs = [elements.studyId, elements.conditionId, elements.siteId, elements.distributionId];
+  codeInputs.forEach(input => {
+    const value = input.value.trim();
+    if (!STUDY_CODE_PATTERN.test(value)) markInvalid(input, 'studyDetails.code.error');
+  });
+  [elements.studyTitle, elements.institutionName].forEach(input => {
+    const value = input.value.trim();
+    if (!value || value.length > 120 || DISPLAY_CONTROL_CHARACTER_PATTERN.test(value)) {
+      markInvalid(input, 'studyDetails.text.error');
+    }
+  });
+  if (!VERSION_CODE_PATTERN.test(elements.consentVersion.value.trim())) {
+    markInvalid(elements.consentVersion, 'studyDetails.version.error');
+  }
+  const minutes = elements.expectedMinutes.valueAsNumber;
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > 240) {
+    markInvalid(elements.expectedMinutes, 'studyDetails.minutes.error');
+  }
+  [elements.consentUrl, elements.contactUrl].forEach(input => {
+    try {
+      normalizeHttpsUrl(input.value);
+    } catch (error) {
+      markInvalid(input, 'studyDetails.url.error');
+    }
+  });
+  const returnValue = elements.returnUrl.value.trim();
+  if (validateReturnUrl && (requireReturnUrl || returnValue)) {
+    try {
+      const normalizedReturnUrl = normalizeHttpsUrl(returnValue);
+      if (!deploymentConfig || !globalThis.DeploymentPolicy ||
+        !DeploymentPolicy.returnUrlOriginAllowed(deploymentConfig, normalizedReturnUrl)) {
+        markInvalid(elements.returnUrl, 'studyDetails.url.error');
+      }
+    } catch (error) {
+      markInvalid(elements.returnUrl, requireReturnUrl && !returnValue
+        ? 'studyDetails.returnRequired'
+        : 'studyDetails.url.error');
+    }
+  }
+  if (invalid.length) {
+    setResearcherError('studyDetails.reviewErrors');
+    invalid[0].focus();
+    throw new Error('Invalid researcher field.');
+  }
+  if (!validateReturnUrl) return null;
+  return getStudyMetadataFromForm({ requireReturnUrl });
+}
+
+function revealFirstInvalidResearcherField() {
+  const invalid = elements.researcherSetup.querySelector('[aria-invalid="true"]');
+  if (!invalid) return;
+  const panel = invalid.closest('[data-researcher-step]');
+  if (panel) showResearcherStep(Number(panel.dataset.researcherStep), { focus: false });
+  invalid.focus();
 }
 
 function renderParticipantLanding() {
@@ -3510,6 +3696,53 @@ function setResearcherError(key = '') {
   elements.researcherError.textContent = key ? t(key) : '';
 }
 
+function showResearcherStep(step, { focus = true } = {}) {
+  const panels = [elements.researcherStepStudy, elements.researcherStepTasks, elements.researcherStepLaunch];
+  const indicators = [
+    elements.researcherStepIndicator1,
+    elements.researcherStepIndicator2,
+    elements.researcherStepIndicator3
+  ];
+  if (!Number.isInteger(step) || step < 1 || step > panels.length) return;
+  panels.forEach((panel, index) => {
+    panel.hidden = index + 1 !== step;
+  });
+  indicators.forEach((indicator, index) => {
+    const indicatorStep = index + 1;
+    indicator.classList.toggle('is-complete', indicatorStep < step);
+    if (indicatorStep === step) indicator.setAttribute('aria-current', 'step');
+    else indicator.removeAttribute('aria-current');
+  });
+  setResearcherError();
+  if (focus) {
+    panels[step - 1].focus({ preventScroll: true });
+    panels[step - 1].scrollIntoView({ block: 'start' });
+  }
+}
+
+function continueResearcherStudy() {
+  try {
+    validateResearcherMetadataForm({ validateReturnUrl: false });
+    showResearcherStep(2);
+  } catch (error) {
+    if (error.message !== 'Invalid researcher field.') setResearcherError('studyDetails.invalid');
+  }
+}
+
+function continueResearcherTasks() {
+  try {
+    validateSessionSettings(getResearcherFormSettings());
+    showResearcherStep(3);
+  } catch (error) {
+    const invalidSelection = error.message === 'Invalid task selection.';
+    setResearcherError(invalidSelection ? 'selectAtLeastOneTask' : 'unavailableTaskSelection');
+    const target = invalidSelection
+      ? Array.from(elements.taskSelections).find(input => !input.disabled)
+      : elements.protocolPreset;
+    if (target) target.focus();
+  }
+}
+
 function updateResearcherDescriptions() {
   if (!elements.protocolDescription || !elements.feedbackDescription) return;
   const protocolId = elements.protocolPreset.value;
@@ -4044,6 +4277,84 @@ function clearParticipantLink() {
   elements.participantLinkOutput.hidden = true;
   elements.participantLink.value = '';
   elements.participantLinkStatus.textContent = '';
+  elements.participantHandoff.hidden = true;
+  elements.participantInstructionsStatus.textContent = '';
+}
+
+function generateSuggestedParticipantCode() {
+  let suffix = '';
+  if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+    const values = new Uint8Array(6);
+    window.crypto.getRandomValues(values);
+    suffix = Array.from(values, value => value.toString(16).padStart(2, '0')).join('').toUpperCase();
+  } else {
+    suffix = Math.floor(Math.random() * 0x1000000000000).toString(16).padStart(12, '0').toUpperCase();
+  }
+  return `P${suffix}`;
+}
+
+function generateParticipantCode() {
+  elements.invitationParticipantCode.value = generateSuggestedParticipantCode();
+  elements.invitationParticipantCode.removeAttribute('aria-invalid');
+  elements.invitationParticipantCodeError.textContent = '';
+  elements.participantInstructionsStatus.textContent = '';
+  return elements.invitationParticipantCode.value;
+}
+
+function validatedInvitationParticipantCode() {
+  const code = elements.invitationParticipantCode.value.trim().toUpperCase();
+  elements.invitationParticipantCode.value = code;
+  if (!PARTICIPANT_CODE_PATTERN.test(code)) {
+    elements.invitationParticipantCode.setAttribute('aria-invalid', 'true');
+    elements.invitationParticipantCodeError.textContent = t('participantHandoff.code.error');
+    elements.invitationParticipantCode.focus();
+    throw new Error('Invalid invitation participant code.');
+  }
+  elements.invitationParticipantCode.removeAttribute('aria-invalid');
+  elements.invitationParticipantCodeError.textContent = '';
+  return code;
+}
+
+async function writeClipboardText(value) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch (error) {
+      // Fall back to the legacy copy command below.
+    }
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = typeof document.execCommand === 'function' && document.execCommand('copy');
+  textarea.remove();
+  return copied;
+}
+
+async function copyParticipantInstructions() {
+  const link = elements.participantLink.value;
+  if (!link) return;
+  try {
+    const code = validatedInvitationParticipantCode();
+    const language = elements.participantLinkLanguage.value;
+    const invitation = tFor(language, 'participantHandoff.instructions', {
+      title: elements.studyTitle.value.trim(),
+      link,
+      code,
+      portal: elements.returnUrl.value.trim()
+    });
+    if (!await writeClipboardText(invitation)) throw new Error('Copy command failed.');
+    elements.participantInstructionsStatus.textContent = t('participantHandoff.copied');
+  } catch (error) {
+    if (error.message !== 'Invalid invitation participant code.') {
+      elements.participantInstructionsStatus.textContent = t('participantHandoff.copyFailed');
+    }
+  }
 }
 
 async function createParticipantLink() {
@@ -4053,10 +4364,12 @@ async function createParticipantLink() {
     await buildIdentityPromise;
     if (!appBuildSha256 || !appScriptSha256) throw new Error('Build identity unavailable.');
     const validatedSettings = validateSessionSettings(getResearcherFormSettings());
-    const metadata = getStudyMetadataFromForm({ requireReturnUrl: true });
+    const metadata = validateResearcherMetadataForm({ requireReturnUrl: true });
     const linkLanguage = elements.participantLinkLanguage.value;
     elements.participantLink.value = buildParticipantLink(validatedSettings, linkLanguage, metadata);
     elements.participantLinkOutput.hidden = false;
+    elements.participantHandoff.hidden = false;
+    if (!elements.invitationParticipantCode.value.trim()) generateParticipantCode();
     const statusKey = isLocalPreviewUrl(new URL(elements.participantLink.value))
       ? 'deployment.testLinkCreated'
       : 'participantLink.created';
@@ -4065,6 +4378,12 @@ async function createParticipantLink() {
     });
     setResearcherError();
   } catch (error) {
+    if (error.message === 'Invalid researcher field.') {
+      clearParticipantLink();
+      revealFirstInvalidResearcherField();
+      setResearcherError('studyDetails.reviewErrors');
+      return;
+    }
     const errorKey = error.message === 'Invalid task selection.'
       ? 'selectAtLeastOneTask'
       : error.message === 'Build identity unavailable.'
@@ -4255,6 +4574,7 @@ async function initializeApp() {
   configuredInitialLanguage = entry.language;
   if (offerSupervisedCheckpointAtEntry()) return;
   updateEntryModeUi();
+  showResearcherStep(1, { focus: false });
   showSection('researcherSetup');
 }
 
@@ -4339,7 +4659,7 @@ async function lockResearchSettings() {
     if (!appBuildSha256 || !appScriptSha256) throw new Error('Build identity unavailable.');
     assertSessionAuthorization('researcher_ui');
     const validatedSettings = validateSessionSettings(getResearcherFormSettings());
-    const metadata = getStudyMetadataFromForm();
+    const metadata = validateResearcherMetadataForm();
     applySessionSettings(validatedSettings, {
       configurationSource: 'researcher_ui',
       administrationMode: 'supervised',
@@ -4348,6 +4668,11 @@ async function lockResearchSettings() {
       studyMetadata: metadata
     });
   } catch (error) {
+    if (error.message === 'Invalid researcher field.') {
+      revealFirstInvalidResearcherField();
+      setResearcherError('studyDetails.reviewErrors');
+      return;
+    }
     setResearcherError(
       error.message === 'Build identity unavailable.'
         ? 'researcherSetup.buildUnavailable'
@@ -4585,9 +4910,15 @@ elements.participantReturnPortal.addEventListener('click', event => {
   elements.participantReturnStatus.textContent = t('complete.downloadFirst');
 });
 elements.lockSettings.addEventListener('click', lockResearchSettings);
+elements.researcherStudyNext.addEventListener('click', continueResearcherStudy);
+elements.researcherTasksBack.addEventListener('click', () => showResearcherStep(1));
+elements.researcherTasksNext.addEventListener('click', continueResearcherTasks);
+elements.researcherLaunchBack.addEventListener('click', () => showResearcherStep(2));
 elements.createParticipantLink.addEventListener('click', createParticipantLink);
 elements.copyParticipantLink.addEventListener('click', copyParticipantLink);
 elements.openParticipantLink.addEventListener('click', openParticipantLink);
+elements.generateParticipantCode.addEventListener('click', generateParticipantCode);
+elements.copyParticipantInstructions.addEventListener('click', copyParticipantInstructions);
 elements.continueToPreflight.addEventListener('click', continueFromLanding);
 elements.playTestSound.addEventListener('click', playPreflightTestSound);
 elements.continueToCode.addEventListener('click', continueFromPreflight);
@@ -4656,6 +4987,7 @@ elements.editSettings.addEventListener('click', () => {
   participantLinkConfig = '';
   configuredInitialLanguage = currentLanguage;
   updateEntryModeUi();
+  showResearcherStep(1, { focus: false });
   showSection('researcherSetup');
 });
 elements.protocolPreset.addEventListener('change', () => {
@@ -4668,15 +5000,24 @@ elements.feedbackMode.addEventListener('change', () => {
   setResearcherError();
   updateResearcherDescriptions();
 });
-elements.participantLinkLanguage.addEventListener('change', clearParticipantLink);
+elements.participantLinkLanguage.addEventListener('change', () => {
+  participantLinkLanguageCustomized = true;
+  clearParticipantLink();
+});
 [elements.studyId, elements.conditionId, elements.siteId, elements.distributionId,
   elements.studyTitle, elements.institutionName,
   elements.consentVersion, elements.expectedMinutes, elements.consentUrl,
   elements.contactUrl, elements.returnUrl].forEach(input => {
   input.addEventListener('input', () => {
+    clearResearcherFieldError(input);
     clearParticipantLink();
     setResearcherError();
   });
+});
+elements.invitationParticipantCode.addEventListener('input', () => {
+  elements.invitationParticipantCode.removeAttribute('aria-invalid');
+  elements.invitationParticipantCodeError.textContent = '';
+  elements.participantInstructionsStatus.textContent = '';
 });
 Array.from(elements.taskSelections).forEach(input => {
   input.addEventListener('change', () => {

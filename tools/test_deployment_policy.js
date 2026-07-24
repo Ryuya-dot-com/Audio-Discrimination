@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const DeploymentPolicy = require(path.join(__dirname, '..', 'deployment_policy.js'));
@@ -25,15 +26,18 @@ const production = config();
 const researcher = DeploymentPolicy.contextFor(production, 'https://research.example.edu/battery/');
 assert.equal(researcher.researcherUiAllowed, true);
 assert.equal(researcher.supervisedSessionAllowed, true);
-assert.equal(researcher.participantLinkIssuanceAllowed, false);
+assert.equal(researcher.participantLinkIssuanceAllowed, true);
 assert.equal(researcher.participantSessionAllowed, false);
+assert.equal(researcher.unsignedRemoteParticipantAllowed, true);
 
 const participant = DeploymentPolicy.contextFor(production, 'https://listen.example.edu/battery/');
 assert.equal(participant.researcherUiAllowed, false);
 assert.equal(participant.supervisedSessionAllowed, false);
 assert.equal(participant.participantLinkIssuanceAllowed, false);
-assert.equal(participant.participantSessionAllowed, false);
+assert.equal(participant.participantSessionAllowed, true);
+assert.equal(participant.unsignedRemoteParticipantAllowed, true);
 assert.equal(DeploymentPolicy.SIGNED_PARTICIPANT_LINKS_SUPPORTED, false);
+assert.equal(DeploymentPolicy.UNSIGNED_REMOTE_PARTICIPANT_LINKS_SUPPORTED, true);
 
 const arbitrary = DeploymentPolicy.contextFor(production, 'https://preview.example.net/battery/');
 assert.equal(arbitrary.researcherUiAllowed, false);
@@ -64,6 +68,25 @@ assert.equal(
 assert.equal(DeploymentPolicy.returnUrlOriginAllowed(production, 'https://return.example.edu/upload'), true);
 assert.equal(DeploymentPolicy.returnUrlOriginAllowed(production, 'https://evil.example/upload'), false);
 assert.equal(DeploymentPolicy.returnUrlOriginAllowed(production, 'https://return.example.edu.evil.test/'), false);
+
+const checkedInConfig = DeploymentPolicy.validateConfig(JSON.parse(fs.readFileSync(
+  path.join(__dirname, '..', 'deployment-config.json'),
+  'utf8'
+)));
+const githubPages = DeploymentPolicy.contextFor(
+  checkedInConfig,
+  'https://ryuya-dot-com.github.io/Audio-Discrimination/'
+);
+assert.equal(githubPages.sessionType, 'research');
+assert.equal(githubPages.researcherUiAllowed, true);
+assert.equal(githubPages.supervisedSessionAllowed, true);
+assert.equal(githubPages.participantLinkIssuanceAllowed, true);
+assert.equal(githubPages.participantSessionAllowed, true);
+assert.equal(githubPages.unsignedRemoteParticipantAllowed, true);
+assert.equal(
+  DeploymentPolicy.returnUrlOriginAllowed(checkedInConfig, 'https://forms.example.org/upload'),
+  true
+);
 
 assert.throws(
   () => config({ environment: 'preview', research_session_enabled: true }),

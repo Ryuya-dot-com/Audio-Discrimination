@@ -59,6 +59,7 @@ class ContractHTMLParser(HTMLParser):
         self.script_sources: list[str] = []
         self.html_elements: list[dict[str, str | None]] = []
         self.english_toggles: list[dict[str, str | None]] = []
+        self.attributes_by_id: dict[str, dict[str, str | None]] = {}
 
     def handle_starttag(
         self, tag: str, attrs: list[tuple[str, str | None]]
@@ -67,6 +68,7 @@ class ContractHTMLParser(HTMLParser):
         element_id = attributes.get("id")
         if element_id is not None:
             self.ids[element_id] += 1
+            self.attributes_by_id[element_id] = attributes
 
         for attribute in I18N_ATTRIBUTES:
             key = attributes.get(attribute)
@@ -839,6 +841,73 @@ def check_default_language(parser: ContractHTMLParser) -> CheckResult:
     )
 
 
+def check_researcher_wizard(
+    parser: ContractHTMLParser, tokens: Sequence[JSToken]
+) -> CheckResult:
+    problems: list[str] = []
+    required_ids = {
+        "researcherStepIndicator1",
+        "researcherStepIndicator2",
+        "researcherStepIndicator3",
+        "researcherStepStudy",
+        "researcherStepTasks",
+        "researcherStepLaunch",
+        "researcherStudyNext",
+        "researcherTasksBack",
+        "researcherTasksNext",
+        "researcherLaunchBack",
+        "participantHandoff",
+        "invitationParticipantCode",
+        "generateParticipantCode",
+        "copyParticipantInstructions",
+    }
+    for element_id in sorted(required_ids):
+        if parser.ids[element_id] != 1:
+            problems.append(
+                f"#{element_id}: expected exactly once, found {parser.ids[element_id]}"
+            )
+
+    panel_ids = ("researcherStepStudy", "researcherStepTasks", "researcherStepLaunch")
+    for step, panel_id in enumerate(panel_ids, start=1):
+        attributes = parser.attributes_by_id.get(panel_id, {})
+        if attributes.get("data-researcher-step") != str(step):
+            problems.append(f"#{panel_id}: data-researcher-step must be {step}")
+        if attributes.get("tabindex") != "-1":
+            problems.append(f"#{panel_id}: must be programmatically focusable")
+        if step == 1 and "hidden" in attributes:
+            problems.append(f"#{panel_id}: first step must be initially visible")
+        if step > 1 and "hidden" not in attributes:
+            problems.append(f"#{panel_id}: later steps must be initially hidden")
+
+    handoff = parser.attributes_by_id.get("participantHandoff", {})
+    if "hidden" not in handoff:
+        problems.append("#participantHandoff: must remain hidden until a link is created")
+
+    bodies = extract_function_bodies(tokens)
+    required_functions = {
+        "showResearcherStep",
+        "continueResearcherStudy",
+        "continueResearcherTasks",
+        "validateResearcherMetadataForm",
+        "generateParticipantCode",
+        "copyParticipantInstructions",
+    }
+    for function_name in sorted(required_functions):
+        if function_name not in bodies:
+            problems.append(f"script.js has no {function_name}() function")
+
+    return CheckResult(
+        "researcher wizard",
+        not problems,
+        (
+            "three focused steps, field validation, and participant handoff controls are present"
+            if not problems
+            else f"{len(problems)} researcher-wizard contract problem(s)"
+        ),
+        problems,
+    )
+
+
 def run_check(name: str, check) -> CheckResult:
     try:
         return check()
@@ -874,6 +943,9 @@ def main() -> int:
         run_check("script tag order", lambda: check_script_order(parser)),
         run_check("deployment contract", lambda: check_deployment_contract(tokens)),
         run_check("default language", lambda: check_default_language(parser)),
+        run_check(
+            "researcher wizard", lambda: check_researcher_wizard(parser, tokens)
+        ),
     ]
 
     print(f"UI contract verification: {HTML_PATH.name} <-> {SCRIPT_PATH.name}")

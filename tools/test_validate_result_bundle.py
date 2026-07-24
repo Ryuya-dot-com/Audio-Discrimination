@@ -122,7 +122,7 @@ def provenance() -> dict[str, Any]:
 def common_csv_values() -> dict[str, str]:
     values = {
         "subject_id": SUBJECT_ID,
-        "battery_version": "5.3.0",
+        "battery_version": "5.4.0",
         "session_run_id": RUN_ID,
         "configuration_source": "researcher_ui",
         "administration_mode": "supervised",
@@ -152,7 +152,7 @@ def common_csv_values() -> dict[str, str]:
         "resume_count": "0",
         "interrupted_presentation_count": "0",
         "visibility_interruption_count": "0",
-        "app_build_id": "audio-discrimination-5.3.0",
+        "app_build_id": "audio-discrimination-5.4.0",
         "app_build_sha256": BUILD_SHA,
         "app_script_sha256": SCRIPT_SHA,
         "app_url": "https://listen.example.edu/battery/",
@@ -198,7 +198,7 @@ def remote_participant_config(session_type: str = "research") -> str:
     return urlencode([
         ("mode", "participant"),
         ("link_version", "3"),
-        ("battery_version", "5.3.0"),
+        ("battery_version", "5.4.0"),
         ("deployment_id", "study-production"),
         ("deployment_config_sha256", CONFIG_SHA),
         ("session_type", session_type),
@@ -391,12 +391,12 @@ def default_manifest(contents: dict[str, bytes]) -> dict[str, Any]:
             "returnUrl": "",
         },
         "implementation": {
-            "batteryVersion": "5.3.0",
+            "batteryVersion": "5.4.0",
             "trialSchemaVersion": 11,
             "wideSchemaVersion": 9,
             "checkpointSchemaVersion": 3,
             "resultBundleSchemaVersion": 3,
-            "appBuildId": "audio-discrimination-5.3.0",
+            "appBuildId": "audio-discrimination-5.4.0",
             "procedureScope": "study_profile_binds_adaptive_procedure_scoring_and_stimulus_set",
             "taskOrderMethod": "subject_id_seeded_shuffle",
             "reversalDefinition": "intended_nonzero_staircase_direction_change",
@@ -579,7 +579,7 @@ class ResultBundleValidatorTests(unittest.TestCase):
         report = validate_bundle(self.path)
         self.assertEqual(report.status, "completed")
 
-    def test_rejects_unsigned_remote_research_bundle(self) -> None:
+    def test_accepts_unsigned_remote_research_bundle(self) -> None:
         canonical = remote_participant_config("research")
 
         def mutate(manifest: dict[str, Any], contents: dict[str, bytes]) -> None:
@@ -600,9 +600,8 @@ class ResultBundleValidatorTests(unittest.TestCase):
             self.mutate_wide(contents, lambda row: row.update(updates))
 
         self.make_bundle(mutate)
-        self.assert_invalid(
-            "unsigned participant-link schema 3 permits remote_manual_upload only for TEST sessions"
-        )
+        report = validate_bundle(self.path)
+        self.assertEqual(report.status, "completed")
 
     def test_accepts_loopback_test_only_bundle(self) -> None:
         test_trial_name = f"TEST_ONLY_{TRIAL_NAME}"
