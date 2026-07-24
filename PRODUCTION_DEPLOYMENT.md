@@ -1,12 +1,13 @@
 # Production deployment and result-return contract
 
-This document defines the minimum technical boundary for collecting research
-data. GitHub Pages remains a preview. Passing repository CI or building an
-artifact does not approve a study release.
+This document describes the trust boundary for collecting research data with
+the intentionally relaxed unsigned-link workflow. The checked-in GitHub Pages
+configuration can run supervised sessions and issue remote manual-return links.
+Passing repository CI or publishing the site does not approve a study protocol.
 
 ## Required separation
 
-Use separate HTTPS origins and separate access policies:
+The strongest deployment uses separate HTTPS origins and access policies:
 
 1. **Researcher administration** — protected by institutional SSO and MFA.
    Researchers configure a study and obtain participant links here. This origin
@@ -18,6 +19,12 @@ Use separate HTTPS origins and separate access policies:
    runtime. It accepts packages into private quarantine, validates them, and
    issues a server-side receipt before they become accepted research data.
 
+The checked-in GitHub Pages deployment uses one public origin for researcher
+and participant screens. Consequently, the researcher UI is not access
+protected and anyone who opens the bare URL can construct an unsigned link.
+Studies requiring authenticated configuration must deploy separate protected
+origins instead.
+
 The deployment configuration is public data and must contain no credential,
 private key, upload code, participant identifier, or result. A release binds the
 exact researcher origin, participant origin, participant base URL, permitted
@@ -27,10 +34,14 @@ asset-set hash.
 ## Participant-link authenticity
 
 Canonical URL parsing detects malformed or internally inconsistent links, but
-it does not establish who issued a link. Before remote production use, the
-participant configuration must be authorized by an authenticated issuer and
-cryptographically verified by the participant runtime. The signed payload must
-bind at least:
+it does not establish who issued a link. Version 5.4.0 deliberately permits
+unsigned production links for manual return. Such links are reusable, expose
+the named study configuration, and can be copied by anyone. Researchers must
+verify the exact distributed link and provide an independent contact path so
+participants can confirm the study identity and return-portal address.
+
+If a future deployment requires authenticated invitations, its signed payload
+should bind at least:
 
 - issuer and audience;
 - issue and expiry times;
@@ -40,12 +51,8 @@ bind at least:
 - consent, contact, and return-portal URLs.
 
 Do not place a signing secret in browser JavaScript or the public deployment
-configuration. Until an approved issuer is connected, remote links remain test
-artifacts and must not be distributed for data collection. The current runtime
-enforces this boundary: it enables link issuance and participant-link execution
-only for visibly labelled loopback TEST sessions. Production and staging may run
-supervised sessions on the configured researcher origin, but their participant
-origins remain blocked.
+configuration. The current runtime has no signing secret and makes no claim of
+issuer authentication, participant authentication, expiry, or one-time use.
 
 ## Submission state machine
 

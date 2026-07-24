@@ -262,7 +262,7 @@ class ReleaseArtifactTests(unittest.TestCase):
             config=no_researcher_ui_path,
         )
         self.assertEqual(refused.returncode, 2)
-        self.assertIn("supervised-only production artifact", refused.stderr)
+        self.assertIn("researcher-configured production artifact", refused.stderr)
 
         bad_origin = json.loads(self.production_config.read_text(encoding="utf-8"))
         bad_origin["participant_origin"] = "https://listen.example.edu/path"
@@ -271,6 +271,13 @@ class ReleaseArtifactTests(unittest.TestCase):
         refused = self.build(self.base / "bad-origin.zip", config=bad_origin_path)
         self.assertEqual(refused.returncode, 2)
         self.assertIn("exact HTTPS origin", refused.stderr)
+
+        wildcard = json.loads(self.production_config.read_text(encoding="utf-8"))
+        wildcard["allowed_return_url_origins"] = ["*"]
+        wildcard_path = self.base / "wildcard-return.json"
+        write(wildcard_path, json.dumps(wildcard))
+        allowed = self.build(self.base / "wildcard-return.zip", config=wildcard_path)
+        self.assertEqual(allowed.returncode, 0, allowed.stderr)
 
         duplicate = json.loads(self.production_config.read_text(encoding="utf-8"))
         duplicate["allowed_return_url_origins"] = [

@@ -276,6 +276,49 @@
       margin: 22px 0;
     }
 
+    .researcher-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 22px 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .researcher-steps li {
+      min-width: 0;
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-muted);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .researcher-steps li[aria-current="step"] {
+      border-color: var(--accent);
+      background: #eff6ff;
+      color: #1e3a8a;
+    }
+
+    .researcher-steps li.is-complete {
+      border-color: #9bd3b5;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .researcher-step-panel { margin-top: 18px; }
+
+    .researcher-step-panel > .settings-grid:first-child { margin-top: 0; }
+
+    .step-intro {
+      max-width: 72ch;
+      margin-bottom: 18px;
+    }
+
     .setting-card {
       min-width: 0;
       padding: 18px;
@@ -291,6 +334,16 @@
       padding-top: 16px;
       border-top: 1px solid var(--border);
     }
+
+    .handoff-box {
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid #c7d7f2;
+      border-radius: 6px;
+      background: #f8fbff;
+    }
+
+    .handoff-box h3 { margin-bottom: 8px; }
 
     .field-grid {
       display: grid;
@@ -393,6 +446,18 @@
       min-height: 1.5em;
       color: var(--error);
       font-weight: 600;
+    }
+
+    .field-error {
+      min-height: 0;
+      margin: 6px 0 0;
+      font-size: 14px;
+    }
+
+    input[aria-invalid="true"],
+    select[aria-invalid="true"] {
+      border-color: var(--error);
+      box-shadow: 0 0 0 1px var(--error);
     }
 
     .order-list {
@@ -526,6 +591,14 @@
       .settings-grid,
       .task-options,
       .field-grid { grid-template-columns: 1fr; }
+      .researcher-steps {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+      }
+      .researcher-steps li {
+        padding: 8px 4px;
+        font-size: 12px;
+      }
       .setting-card.full-width { grid-column: auto; }
       .field-grid .full-width { grid-column: auto; }
       .metadata-list { grid-template-columns: 1fr; gap: 2px; }
@@ -572,10 +645,20 @@
     <section id="researcherSetup" class="card active" tabindex="-1" aria-labelledby="researcherSetupTitle">
       <div class="tag" data-i18n="researcherSetup.tag">Researcher setup</div>
       <h1 id="researcherSetupTitle" data-i18n="researcherSetup.title">Configure the listening battery</h1>
-      <p data-i18n="researcherSetup.intro">Select the tasks, study profile, and feedback shown to participants. Each profile fixes both the adaptive procedure and its matching stimulus set.</p>
+      <p data-i18n="researcherSetup.intro">Complete three short steps to identify the study, choose the procedure, and prepare either remote distribution or a supervised session.</p>
 
-      <div class="settings-grid">
-        <fieldset class="setting-card full-width">
+      <ol id="researcherStepIndicator" class="researcher-steps" aria-label="Researcher setup progress" data-i18n-aria-label="researcherWizard.steps.label">
+        <li id="researcherStepIndicator1" aria-current="step" data-i18n="researcherWizard.step.study">1. Study information</li>
+        <li id="researcherStepIndicator2" data-i18n="researcherWizard.step.tasks">2. Tasks and procedure</li>
+        <li id="researcherStepIndicator3" data-i18n="researcherWizard.step.launch">3. Distribute or start</li>
+      </ol>
+      <p id="researcherError" class="error-message" role="alert" aria-live="assertive"></p>
+
+      <div id="researcherStepStudy" class="researcher-step-panel" data-researcher-step="1" tabindex="-1">
+        <h2 data-i18n="researcherWizard.study.title">Enter the study information</h2>
+        <p class="step-intro" data-i18n="researcherWizard.study.intro">This information is shown to participants and included in every result package.</p>
+        <div class="settings-grid">
+          <fieldset class="setting-card full-width">
           <legend data-i18n="studyDetails.legend">Study details</legend>
           <p class="status" data-i18n="studyDetails.help">These non-participant details identify the study, support consent and recovery, and are stored in both result files. Direct identifiers must not be entered.</p>
           <div class="field-grid">
@@ -611,7 +694,7 @@
               <label for="expectedMinutes" data-i18n="studyDetails.minutes.label">Expected duration (minutes)</label>
               <input id="expectedMinutes" type="number" required min="1" max="240" step="1" value="30">
             </div>
-            <p class="status full-width" data-i18n="studyDetails.publicUrlHelp">These URLs are included in local TEST links and are reserved for a future signed remote-link flow. Use public study pages only; never include credentials, access tokens, or participant-specific secrets.</p>
+            <p class="status full-width" data-i18n="studyDetails.publicUrlHelp">These URLs are included in participant links. Use public study pages only; never include credentials, access tokens, or participant-specific secrets.</p>
             <div>
               <label for="consentUrl" data-i18n="studyDetails.consentUrl.label">Consent information URL (HTTPS)</label>
               <input id="consentUrl" type="url" required maxlength="1024" placeholder="https://…">
@@ -620,60 +703,79 @@
               <label for="contactUrl" data-i18n="studyDetails.contactUrl.label">Researcher contact URL (HTTPS)</label>
               <input id="contactUrl" type="url" required maxlength="1024" placeholder="https://…">
             </div>
-            <div class="full-width">
-              <label for="returnUrl" data-i18n="studyDetails.returnUrl.label">Remote result-return portal (HTTPS)</label>
-              <input id="returnUrl" type="url" maxlength="1024" placeholder="https://…" aria-describedby="returnUrlHelp">
-              <p id="returnUrlHelp" class="status" data-i18n="studyDetails.returnUrl.help">Required when testing the remote-return flow. Production remote links remain disabled; a future approved portal must provide its own upload receipt.</p>
+          </div>
+          </fieldset>
+        </div>
+        <div class="button-row">
+          <button id="researcherStudyNext" type="button" data-i18n="researcherWizard.next">Next</button>
+        </div>
+      </div>
+
+      <div id="researcherStepTasks" class="researcher-step-panel" data-researcher-step="2" tabindex="-1" hidden>
+        <h2 data-i18n="researcherWizard.tasks.title">Choose the tasks and procedure</h2>
+        <p class="step-intro" data-i18n="researcherWizard.tasks.intro">Select a published procedure profile, then confirm the available listening tasks and participant feedback.</p>
+        <div class="settings-grid">
+          <div class="setting-card">
+            <label for="protocolPreset" data-i18n="researcherSetup.protocol.label">Study profile (procedure and stimuli)</label>
+            <select id="protocolPreset">
+              <option value="kachlicka2019" selected data-i18n="protocol.kachlicka2019.label">Kachlicka et al. (2019)</option>
+              <option value="saitoTierney2024" data-i18n="protocol.saitoTierney2024.label">Saito &amp; Tierney (2024; online 2022)</option>
+              <option value="sun2021" data-i18n="protocol.sun2021.label">Sun, Saito, &amp; Tierney (2021)</option>
+            </select>
+            <p id="protocolDescription" class="setting-description" aria-live="polite" data-i18n="protocol.kachlicka2019.description">70 trials or 8 reversals; harder after 3 consecutive correct responses; step sizes 10 → 5 → 2 → 1; threshold based on reversals 2 onward. Uses a reconstruction of the reported stimulus parameters, not the original study files.</p>
+          </div>
+
+          <div class="setting-card">
+            <label for="feedbackMode" data-i18n="researcherSetup.feedback.label">Participant feedback</label>
+            <select id="feedbackMode">
+              <option value="practice_only" selected data-i18n="feedback.practiceOnly.label">Practice only</option>
+              <option value="detailed" data-i18n="feedback.detailed.label">Detailed completion feedback</option>
+            </select>
+            <p id="feedbackDescription" class="setting-description" aria-live="polite" data-i18n="feedback.practiceOnly.description">Correctness is shown during the five practice trials. Main trials show no correctness or progress, and the automatic completion feedback is only a completion message. This display setting does not access-protect the researcher-results screen.</p>
+          </div>
+
+          <fieldset class="setting-card full-width">
+            <legend data-i18n="researcherSetup.tasks.legend">Tasks</legend>
+            <p class="status" data-i18n="researcherSetup.tasks.help">Task availability follows the selected study profile. Participant task screens use neutral Listening Task labels; the generated URL carries named task settings.</p>
+            <div class="task-options">
+              <label class="check-option" for="taskDuration">
+                <input id="taskDuration" type="checkbox" name="taskSelection" value="duration" checked>
+                <span data-i18n="task.duration">Duration discrimination</span>
+              </label>
+              <label class="check-option" for="taskFormant">
+                <input id="taskFormant" type="checkbox" name="taskSelection" value="formant" checked>
+                <span data-i18n="task.formant">Formant discrimination</span>
+              </label>
+              <label class="check-option" for="taskPitch">
+                <input id="taskPitch" type="checkbox" name="taskSelection" value="pitch" checked>
+                <span data-i18n="task.pitch">Pitch discrimination</span>
+              </label>
+              <label class="check-option" for="taskRisetime">
+                <input id="taskRisetime" type="checkbox" name="taskSelection" value="risetime" checked>
+                <span data-i18n="task.risetime">Rise-time discrimination</span>
+              </label>
             </div>
-          </div>
-        </fieldset>
-
-        <fieldset class="setting-card full-width">
-          <legend data-i18n="researcherSetup.tasks.legend">Tasks</legend>
-          <p class="status" data-i18n="researcherSetup.tasks.help">Task availability follows the selected study profile. Participant task screens use neutral Listening Task labels; the generated URL carries named task settings.</p>
-          <div class="task-options">
-            <label class="check-option" for="taskDuration">
-              <input id="taskDuration" type="checkbox" name="taskSelection" value="duration" checked>
-              <span data-i18n="task.duration">Duration discrimination</span>
-            </label>
-            <label class="check-option" for="taskFormant">
-              <input id="taskFormant" type="checkbox" name="taskSelection" value="formant" checked>
-              <span data-i18n="task.formant">Formant discrimination</span>
-            </label>
-            <label class="check-option" for="taskPitch">
-              <input id="taskPitch" type="checkbox" name="taskSelection" value="pitch" checked>
-              <span data-i18n="task.pitch">Pitch discrimination</span>
-            </label>
-            <label class="check-option" for="taskRisetime">
-              <input id="taskRisetime" type="checkbox" name="taskSelection" value="risetime" checked>
-              <span data-i18n="task.risetime">Rise-time discrimination</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <div class="setting-card">
-          <label for="protocolPreset" data-i18n="researcherSetup.protocol.label">Study profile (procedure and stimuli)</label>
-          <select id="protocolPreset">
-            <option value="kachlicka2019" selected data-i18n="protocol.kachlicka2019.label">Kachlicka et al. (2019)</option>
-            <option value="saitoTierney2024" data-i18n="protocol.saitoTierney2024.label">Saito &amp; Tierney (2024; online 2022)</option>
-            <option value="sun2021" data-i18n="protocol.sun2021.label">Sun, Saito, &amp; Tierney (2021)</option>
-          </select>
-          <p id="protocolDescription" class="setting-description" aria-live="polite" data-i18n="protocol.kachlicka2019.description">70 trials or 8 reversals; harder after 3 consecutive correct responses; step sizes 10 → 5 → 2 → 1; threshold based on reversals 2 onward. Uses a reconstruction of the reported stimulus parameters, not the original study files.</p>
+          </fieldset>
         </div>
-
-        <div class="setting-card">
-          <label for="feedbackMode" data-i18n="researcherSetup.feedback.label">Participant feedback</label>
-          <select id="feedbackMode">
-            <option value="practice_only" selected data-i18n="feedback.practiceOnly.label">Practice only</option>
-            <option value="detailed" data-i18n="feedback.detailed.label">Detailed completion feedback</option>
-          </select>
-          <p id="feedbackDescription" class="setting-description" aria-live="polite" data-i18n="feedback.practiceOnly.description">Correctness is shown during the five practice trials. Main trials show no correctness or progress, and the automatic completion feedback is only a completion message. This display setting does not access-protect the researcher-results screen.</p>
+        <div class="button-row">
+          <button id="researcherTasksBack" type="button" class="secondary" data-i18n="researcherWizard.back">Back</button>
+          <button id="researcherTasksNext" type="button" data-i18n="researcherWizard.next">Next</button>
         </div>
+      </div>
 
-        <div class="setting-card full-width">
-          <h2 data-i18n="participantLink.title">Participant link (local TEST only)</h2>
-          <p data-i18n="participantLink.intro">Create a local TEST link that fixes the study metadata, procedure, stimuli, tasks, feedback, return portal, and starting language. Production remote-link issuance is disabled until an authenticated issuer and signature verification are integrated.</p>
-          <p class="status" data-i18n="participantLink.limitations">Local TEST links are reusable and unsigned. They are not proof of identity, a one-time invitation, or a blinding mechanism, and must never be distributed for research data collection.</p>
+      <div id="researcherStepLaunch" class="researcher-step-panel" data-researcher-step="3" tabindex="-1" hidden>
+        <h2 data-i18n="researcherWizard.launch.title">Distribute the study or start on this device</h2>
+        <p class="step-intro" data-i18n="researcherWizard.launch.intro">For remote participation, create a link and copy the complete invitation. For supervised testing, start directly on this device.</p>
+        <div class="settings-grid">
+          <div class="setting-card full-width">
+          <h2 data-i18n="participantLink.title">Participant link (unsigned manual return)</h2>
+          <p data-i18n="participantLink.intro">Create a participant link that fixes the study metadata, procedure, stimuli, tasks, feedback, return portal, and starting language. On an approved HTTPS deployment, the link can be shared for manual result return.</p>
+          <p class="status" data-i18n="participantLink.limitations">This link is reusable and unsigned. It does not authenticate the researcher or participant, is not a one-time invitation, and exposes the named study configuration. Verify the study identity and reconcile every returned ZIP independently.</p>
+          <div>
+            <label for="returnUrl" data-i18n="studyDetails.returnUrl.label">Remote result-return portal (HTTPS)</label>
+            <input id="returnUrl" type="url" maxlength="1024" placeholder="https://…" aria-describedby="returnUrlHelp">
+            <p id="returnUrlHelp" class="status" data-i18n="studyDetails.returnUrl.help">Required for a participant link. The portal must use HTTPS and provide its own upload receipt. This deployment accepts any HTTPS return origin.</p>
+          </div>
           <div>
             <label for="participantLinkLanguage" data-i18n="participantLink.startLanguage.label">Participant starting language</label>
             <select id="participantLinkLanguage">
@@ -693,15 +795,36 @@
             </div>
           </div>
           <p id="participantLinkStatus" class="status" role="status" aria-live="polite"></p>
-        </div>
-      </div>
 
-      <p id="researcherError" class="error-message" role="alert" aria-live="assertive"></p>
-      <div class="button-row">
-        <button id="lockSettings" type="button" data-i18n="researcherSetup.lock">Start a supervised session on this device</button>
+          <div id="participantHandoff" class="handoff-box" hidden>
+            <h3 data-i18n="participantHandoff.title">Prepare the participant invitation</h3>
+            <p data-i18n="participantHandoff.intro">Assign a pseudonymous code, then copy one message containing the code, link, and completion instructions.</p>
+            <label for="invitationParticipantCode" data-i18n="participantHandoff.code.label">Participant code for this invitation</label>
+            <input id="invitationParticipantCode" type="text" maxlength="32" pattern="[A-Za-z][A-Za-z0-9_-]{0,31}" placeholder="e.g., P001" data-i18n-placeholder="participantHandoff.code.placeholder" aria-describedby="invitationParticipantCodeHelp invitationParticipantCodeError">
+            <p id="invitationParticipantCodeHelp" class="status" data-i18n="participantHandoff.code.help">Use a pseudonymous code from your approved study roster. Record generated codes in the roster and check for duplicates. Do not use a direct identifier.</p>
+            <p id="invitationParticipantCodeError" class="error-message field-error" role="alert" aria-live="assertive"></p>
+            <div class="button-row">
+              <button id="generateParticipantCode" type="button" class="secondary" data-i18n="participantHandoff.generate">Generate code</button>
+              <button id="copyParticipantInstructions" type="button" data-i18n="participantHandoff.copy">Copy complete invitation</button>
+            </div>
+            <p id="participantInstructionsStatus" class="status" role="status" aria-live="polite"></p>
+          </div>
+          </div>
+
+          <div class="setting-card full-width">
+            <h2 data-i18n="researcherWizard.supervised.title">Supervised session on this device</h2>
+            <p data-i18n="researcherWizard.supervised.intro">Use this when the researcher controls this device and will enter or provide the participant code at the session.</p>
+            <div class="button-row">
+              <button id="lockSettings" type="button" data-i18n="researcherSetup.lock">Start a supervised session on this device</button>
+            </div>
+          </div>
+        </div>
+        <div class="button-row">
+          <button id="researcherLaunchBack" type="button" class="secondary" data-i18n="researcherWizard.back">Back</button>
+        </div>
+        <p id="buildInfo" class="status" role="status" aria-live="polite"></p>
+        <p id="deploymentOriginWarning" class="warning-box" data-i18n="checkpoint.sharedOrigin" hidden>This GitHub Pages origin is shared with other project sites. It may be used for previewing, but research sessions are blocked until the app is deployed on a dedicated HTTPS origin.</p>
       </div>
-      <p id="buildInfo" class="status" role="status" aria-live="polite"></p>
-      <p id="deploymentOriginWarning" class="warning-box" data-i18n="checkpoint.sharedOrigin" hidden>This GitHub Pages origin is shared with other project sites. It may be used for previewing, but research sessions are blocked until the app is deployed on a dedicated HTTPS origin.</p>
     </section>
 
     <section id="participantLanding" class="card" tabindex="-1" aria-labelledby="participantLandingTitle">

@@ -108,6 +108,16 @@ def main() -> int:
     )
     if signed_links:
         fail("schema 3 cannot enable signed participant links without a new validator contract")
+    unsigned_remote_links = match_group(
+        deployment_policy_source,
+        r"const UNSIGNED_REMOTE_PARTICIPANT_LINKS_SUPPORTED = (true|false);",
+        "unsigned remote participant-link support gate",
+    ) == "true"
+    assert_equal(
+        unsigned_remote_links,
+        codebook["unsigned_remote_participant_links_supported"],
+        "unsigned remote participant-link support gate",
+    )
     link_parameters = re.findall(
         r"'([^']+)'",
         match_group(

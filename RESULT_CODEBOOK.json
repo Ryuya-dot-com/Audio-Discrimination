@@ -1,8 +1,9 @@
 {
   "codebook_schema_version": 1,
-  "battery_version": "5.3.0",
+  "battery_version": "5.4.0",
   "participant_link_schema_version": "3",
   "signed_participant_links_supported": false,
+  "unsigned_remote_participant_links_supported": true,
   "participant_link_parameters": [
     "mode",
     "link_version",

@@ -2,9 +2,11 @@
   'use strict';
 
   const CONFIG_SCHEMA_VERSION = 1;
-  // Remote research links remain fail-closed until the participant runtime
-  // verifies a configuration signed by an authenticated issuer.
+  // Signed links are not implemented. This build deliberately supports an
+  // explicitly labelled unsigned manual-return workflow for deployments that
+  // enable research sessions. The link remains reusable and unauthenticated.
   const SIGNED_PARTICIPANT_LINKS_SUPPORTED = false;
+  const UNSIGNED_REMOTE_PARTICIPANT_LINKS_SUPPORTED = true;
   const DEPLOYMENT_ID_PATTERN = /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/;
   const ENVIRONMENTS = Object.freeze(['preview', 'staging', 'production']);
   const EXACT_KEYS = Object.freeze([
@@ -85,7 +87,7 @@
       throw new Error('allowed_return_url_origins must be an array.');
     }
     const allowedReturnUrlOrigins = value.allowed_return_url_origins.map((origin, index) => (
-      normalizeExactHttpsOrigin(origin, `allowed_return_url_origins[${index}]`)
+      origin === '*' ? '*' : normalizeExactHttpsOrigin(origin, `allowed_return_url_origins[${index}]`)
     ));
     if (new Set(allowedReturnUrlOrigins).size !== allowedReturnUrlOrigins.length) {
       throw new Error('allowed_return_url_origins must not contain duplicates.');
@@ -120,6 +122,10 @@
     const participantOriginMatch = exactHttps && url.origin === config.participantOrigin;
     const signedRemoteParticipantAllowed = researchDeployment &&
       SIGNED_PARTICIPANT_LINKS_SUPPORTED;
+    const unsignedRemoteParticipantAllowed = researchDeployment &&
+      UNSIGNED_REMOTE_PARTICIPANT_LINKS_SUPPORTED;
+    const remoteParticipantAllowed = signedRemoteParticipantAllowed ||
+      unsignedRemoteParticipantAllowed;
     return Object.freeze({
       localTest,
       sessionType: localTest ? 'test' : 'research',
@@ -130,11 +136,12 @@
         researchDeployment && config.researcherUiEnabled && researcherOriginMatch
       ),
       participantLinkIssuanceAllowed: localTest || (
-        signedRemoteParticipantAllowed && config.researcherUiEnabled && researcherOriginMatch
+        remoteParticipantAllowed && config.researcherUiEnabled && researcherOriginMatch
       ),
       participantSessionAllowed: localTest || (
-        signedRemoteParticipantAllowed && participantOriginMatch
+        remoteParticipantAllowed && participantOriginMatch
       ),
+      unsignedRemoteParticipantAllowed,
       deploymentPreviewOnly: !localTest && config.environment === 'preview',
       researcherOriginMatch,
       participantOriginMatch
@@ -156,8 +163,10 @@
   function returnUrlOriginAllowed(config, value) {
     try {
       const url = value instanceof URL ? value : new URL(value);
-      return url.protocol === 'https:' && !url.username && !url.password &&
-        config.allowedReturnUrlOrigins.includes(url.origin);
+      return url.protocol === 'https:' && !url.username && !url.password && (
+        config.allowedReturnUrlOrigins.includes('*') ||
+        config.allowedReturnUrlOrigins.includes(url.origin)
+      );
     } catch (error) {
       return false;
     }
@@ -166,6 +175,7 @@
   const api = Object.freeze({
     CONFIG_SCHEMA_VERSION,
     SIGNED_PARTICIPANT_LINKS_SUPPORTED,
+    UNSIGNED_REMOTE_PARTICIPANT_LINKS_SUPPORTED,
     validateConfig,
     isLoopbackLocation,
     contextFor,
